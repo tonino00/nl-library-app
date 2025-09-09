@@ -203,8 +203,8 @@ const UsuarioDetailPage: React.FC = () => {
       <Card>
         <UserDetailsContainer>
           <div>
-            <Avatar url={usuario.foto}>
-              {!usuario.foto && usuario.nome.charAt(0).toUpperCase()}
+            <Avatar url={usuario.foto && usuario.foto.startsWith('http') ? usuario.foto : undefined}>
+              {usuario.nome ? usuario.nome.charAt(0).toUpperCase() : 'U'}
             </Avatar>
           </div>
           

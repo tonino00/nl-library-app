@@ -127,7 +127,8 @@ const LivroFormPage: React.FC = () => {
         await dispatch(createLivro(data)).unwrap();
         toast.success('Livro criado com sucesso!');
       }
-      navigate('/livros');
+      // Passar o parâmetro forceRefresh para a página de listagem
+      navigate('/livros', { state: { forceRefresh: true } });
     } catch (error: any) {
       toast.error(error || 'Ocorreu um erro ao salvar o livro');
     } finally {
@@ -211,7 +212,7 @@ const LivroFormPage: React.FC = () => {
               label="Categoria"
               {...register('categoria', { required: 'A categoria é obrigatória' })}
               error={errors.categoria?.message}
-              options={categorias.map(cat => ({ value: cat._id || '', label: cat.nome }))}
+              options={Array.isArray(categorias) ? categorias.map(cat => ({ value: cat._id || '', label: cat.nome })) : []}
               fullWidth
             />
             

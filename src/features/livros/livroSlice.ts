@@ -84,7 +84,7 @@ export const pesquisarLivros = createAsyncThunk(
     try {
       return await livroService.pesquisar(termo);
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Erro ao pesquisar livros');
+      return rejectWithValue(error.response?.data?.message || 'Erro ao buscar livros');
     }
   }
 );

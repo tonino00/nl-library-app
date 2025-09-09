@@ -75,7 +75,8 @@ const CategoriaFormPage: React.FC = () => {
         await dispatch(createCategoria(data)).unwrap();
         toast.success('Categoria criada com sucesso!');
       }
-      navigate('/categorias');
+      // Passar o parâmetro forceRefresh para a página de listagem
+      navigate('/categorias', { state: { forceRefresh: true } });
     } catch (error: any) {
       toast.error(error || 'Ocorreu um erro ao salvar a categoria');
     } finally {

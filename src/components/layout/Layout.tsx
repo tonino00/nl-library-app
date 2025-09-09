@@ -9,9 +9,14 @@ const LayoutContainer = styled.div`
   min-height: 100vh;
 `;
 
-const Content = styled.main<{ isSidebarOpen: boolean }>`
+// Define a interface para o styled component para evitar o warning de prop
+interface ContentProps {
+  $isSidebarOpen: boolean;
+}
+
+const Content = styled.main<ContentProps>`
   flex: 1;
-  margin-left: ${({ isSidebarOpen }) => (isSidebarOpen ? '250px' : '70px')};
+  margin-left: ${({ $isSidebarOpen }) => ($isSidebarOpen ? '250px' : '70px')};
   transition: margin-left 0.3s ease;
   padding: 20px;
   background-color: var(--background-color);
@@ -30,7 +35,7 @@ const Layout: React.FC = () => {
     <LayoutContainer>
       <Header toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
       <Sidebar isOpen={isSidebarOpen} />
-      <Content isSidebarOpen={isSidebarOpen}>
+      <Content $isSidebarOpen={isSidebarOpen}>
         <div className="container">
           <Outlet />
         </div>

@@ -69,9 +69,12 @@ export const deleteUsuario = createAsyncThunk(
 
 export const toggleAtivoUsuario = createAsyncThunk(
   'usuarios/toggleAtivo',
-  async (id: string, { rejectWithValue }) => {
+  async (id: string, { getState, rejectWithValue }) => {
     try {
-      return await usuarioService.toggleAtivo(id);
+      const state = getState() as { usuarios: UsuarioState };
+      const usuario = state.usuarios.usuarios.find(u => u._id === id);
+      const novoStatus = usuario ? !usuario.ativo : true;
+      return await usuarioService.alterarStatus(id, novoStatus);
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Erro ao alterar status do usuário');
     }

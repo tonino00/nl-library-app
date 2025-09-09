@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { fetchCategorias, deleteCategoria } from '../../features/categorias/categoriaSlice';
@@ -37,24 +37,38 @@ const CategoriasListPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { categorias, isLoading } = useSelector((state: RootState) => state.categorias);
   const { user } = useSelector((state: RootState) => state.auth);
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredCategorias, setFilteredCategorias] = useState<Categoria[]>([]);
   
-  // Verificar se o usuário é admin ou bibliotecário
-  const canEdit = user?.tipo === 'admin' || user?.tipo === 'bibliotecario';
+  // Verificar se o usuário é admin
+  const canEdit = user?.tipo === 'admin';
   
   useEffect(() => {
+    // Verificar se precisamos forçar uma atualização dos dados
+    const forceRefresh = location.state && (location.state as any).forceRefresh;
+    
+    // Buscar categorias ao carregar o componente ou quando forceRefresh for true
     dispatch(fetchCategorias());
-  }, [dispatch]);
+    
+    // Limpar o state de navegação para evitar atualizações desnecessárias
+    if (forceRefresh && window.history) {
+      window.history.replaceState({}, '', location.pathname);
+    }
+  }, [dispatch, location]);
   
   useEffect(() => {
-    if (categorias) {
+    // Verifica se categorias é um array antes de chamar filter
+    if (categorias && Array.isArray(categorias)) {
       setFilteredCategorias(
         categorias.filter(cat => 
           cat.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
           (cat.descricao && cat.descricao.toLowerCase().includes(searchTerm.toLowerCase()))
         )
       );
+    } else {
+      // Inicializa com array vazio se não for um array válido
+      setFilteredCategorias([]);
     }
   }, [categorias, searchTerm]);
   

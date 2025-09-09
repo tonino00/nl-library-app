@@ -1,8 +1,9 @@
 import React from 'react';
 import styled from 'styled-components';
-import { NavLink } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '../../store';
+import { logout } from '../../features/auth/authSlice';
 import { 
   FiHome, 
   FiBook, 
@@ -10,7 +11,8 @@ import {
   FiUsers, 
   FiRepeat, 
   FiSettings,
-  FiBarChart2
+  FiBarChart2,
+  FiLogOut
 } from 'react-icons/fi';
 
 interface SidebarProps {
@@ -33,6 +35,9 @@ const SidebarContainer = styled.aside<{ isOpen: boolean }>`
 const NavList = styled.ul`
   list-style: none;
   padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100% - 40px);
 `;
 
 const NavItem = styled.li`
@@ -82,10 +87,62 @@ const SectionTitle = styled.div<{ $isopen: string }>`
   display: ${({ $isopen }) => ($isopen === 'true' ? 'block' : 'none')};
 `;
 
+const LogoutButton = styled.button<{ $isopen: string }>`
+  display: flex;
+  align-items: center;
+  width: calc(100% - 20px);
+  margin: 10px;
+  padding: 12px 15px;
+  border: none;
+  background-color: #f8d7da;
+  color: #dc3545;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: #dc3545;
+    color: white;
+  }
+  
+  svg {
+    min-width: 20px;
+    margin-right: ${({ $isopen }) => ($isopen === 'true' ? '12px' : '0')};
+  }
+  
+  span {
+    white-space: nowrap;
+    opacity: ${({ $isopen }) => ($isopen === 'true' ? 1 : 0)};
+    visibility: ${({ $isopen }) => ($isopen === 'true' ? 'visible' : 'hidden')};
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+  }
+`;
+
 const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
-  const isAdmin = user && user.tipo === 'admin';
-  const isBibliotecario = user && (user.tipo === 'bibliotecario' || user.tipo === 'admin');
+  
+  // Debug para verificar o usuário e suas permissões
+  console.log('Current User:', user);
+  console.log('User Type:', user?.tipo);
+  
+  // Verificar se o usuário é admin, com segurança de tipo
+  const userType = user?.tipo as string | undefined;
+  const isAdmin = !!user && (
+    userType === 'admin' || 
+    (typeof userType === 'string' && userType.toLowerCase() === 'admin')
+  );
+  
+  console.log('Is Admin:', isAdmin);
+  
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate('/login');
+  };
   
   return (
     <SidebarContainer isOpen={isOpen}>
@@ -93,7 +150,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         <NavItem>
           <StyledNavLink to="/" $isopen={isOpen.toString()}>
             <FiHome size={20} />
-            <span>Início</span>
+            <span>Dashboard</span>
           </StyledNavLink>
         </NavItem>
 
@@ -113,7 +170,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
           </StyledNavLink>
         </NavItem>
 
-        {isBibliotecario && (
+        {isAdmin && (
           <>
             <SectionTitle $isopen={isOpen.toString()}>Gerenciamento</SectionTitle>
             
@@ -137,12 +194,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
           <>
             <SectionTitle $isopen={isOpen.toString()}>Administração</SectionTitle>
             
-            <NavItem>
+            {/* <NavItem>
               <StyledNavLink to="/dashboard" $isopen={isOpen.toString()}>
                 <FiBarChart2 size={20} />
                 <span>Dashboard</span>
               </StyledNavLink>
-            </NavItem>
+            </NavItem> */}
             
             <NavItem>
               <StyledNavLink to="/configuracoes" $isopen={isOpen.toString()}>
@@ -152,6 +209,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
             </NavItem>
           </>
         )}
+        
+        {/* Logout Button - Always visible at the bottom */}
+        <div style={{ marginTop: 'auto', padding: '20px 0' }}>
+          <SectionTitle $isopen={isOpen.toString()}>Conta</SectionTitle>
+          <LogoutButton onClick={handleLogout} $isopen={isOpen.toString()}>
+            <FiLogOut size={20} />
+            <span>Sair</span>
+          </LogoutButton>
+        </div>
       </NavList>
     </SidebarContainer>
   );

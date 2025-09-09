@@ -111,6 +111,28 @@ export const renovarEmprestimo = createAsyncThunk(
   }
 );
 
+export const getAtrasadosEmprestimos = createAsyncThunk(
+  'emprestimos/getAtrasados',
+  async (_, { rejectWithValue }) => {
+    try {
+      return await emprestimoService.getAtrasados();
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Erro ao buscar empréstimos atrasados');
+    }
+  }
+);
+
+export const pagarMultaEmprestimo = createAsyncThunk(
+  'emprestimos/pagarMulta',
+  async (id: string, { rejectWithValue }) => {
+    try {
+      return await emprestimoService.pagarMulta(id);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Erro ao pagar multa do empréstimo');
+    }
+  }
+);
+
 // Slice
 const emprestimoSlice = createSlice({
   name: 'emprestimos',
@@ -259,6 +281,37 @@ const emprestimoSlice = createSlice({
         state.emprestimo = action.payload;
       })
       .addCase(renovarEmprestimo.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Empréstimos Atrasados
+      .addCase(getAtrasadosEmprestimos.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(getAtrasadosEmprestimos.fulfilled, (state, action: PayloadAction<Emprestimo[]>) => {
+        state.isLoading = false;
+        state.emprestimos = action.payload;
+      })
+      .addCase(getAtrasadosEmprestimos.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Pagar Multa
+      .addCase(pagarMultaEmprestimo.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(pagarMultaEmprestimo.fulfilled, (state, action: PayloadAction<Emprestimo>) => {
+        state.isLoading = false;
+        state.emprestimos = state.emprestimos.map(emp =>
+          emp._id === action.payload._id ? action.payload : emp
+        );
+        state.emprestimo = action.payload;
+      })
+      .addCase(pagarMultaEmprestimo.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });

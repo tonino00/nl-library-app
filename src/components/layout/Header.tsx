@@ -61,7 +61,7 @@ const IconButton = styled.button`
 const UserInfo = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 `;
 
 const UserName = styled.span`
@@ -81,6 +81,31 @@ const Avatar = styled.div`
   font-weight: 600;
 `;
 
+const LogoutButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #f8d7da;
+  color: #dc3545;
+  border: 1px solid #dc3545;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: #dc3545;
+    color: white;
+  }
+  
+  span {
+    display: inline-block;
+  }
+`;
+
+// Usamos React.FC<HeaderProps> para tipar corretamente os props
 const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
@@ -101,17 +126,18 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
       
       {user && (
         <UserInfo>
-          <UserName>{user.nome}</UserName>
+          <UserName>{user.nome || 'Usuário'}</UserName>
           {user.foto ? (
             <img src={user.foto} alt={user.nome} width="36" height="36" style={{ borderRadius: '50%' }} />
           ) : (
             <Avatar>
-              {user.nome.charAt(0).toUpperCase()}
+              {user.nome && user.nome.charAt(0) ? user.nome.charAt(0).toUpperCase() : '?'}
             </Avatar>
           )}
-          <IconButton onClick={handleLogout} aria-label="Sair">
-            <FiLogOut size={20} />
-          </IconButton>
+          {/* <LogoutButton onClick={handleLogout}>
+            <FiLogOut size={16} />
+            <span>Sair</span>
+          </LogoutButton> */}
         </UserInfo>
       )}
     </HeaderContainer>

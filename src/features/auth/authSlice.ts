@@ -43,12 +43,29 @@ export const logout = createAsyncThunk(
 
 export const checkAuth = createAsyncThunk(
   'auth/checkAuth',
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, dispatch }) => {
     try {
+      // Verifica se há token antes de fazer a chamada
+      const token = localStorage.getItem('token');
+      if (!token) {
+        // Se não houver token, limpa o estado de autenticação e rejeita
+        dispatch(logout());
+        return rejectWithValue('Usuário não autenticado');
+      }
+      
       const user = await authService.checkAuth();
       return user;
     } catch (error: any) {
+      // Se ocorrer um erro de autenticação, limpa os dados
+      dispatch(logout());
       return rejectWithValue(error.response?.data?.message || 'Erro ao verificar autenticação');
+    }
+  },
+  {
+    // Adiciona condição para não executar a ação se já estiver em andamento
+    condition: (_, { getState }) => {
+      const { auth } = getState() as { auth: AuthState };
+      return !auth.isLoading;
     }
   }
 );
@@ -81,11 +98,15 @@ const authSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(login.fulfilled, (state, action: PayloadAction<LoginResponse>) => {
+      .addCase(login.fulfilled, (state, action: PayloadAction<any>) => {
         state.isLoading = false;
         state.isAuthenticated = true;
-        state.user = action.payload.user;
+        // A API pode retornar o usuário em diferentes propriedades
+        const userData = action.payload.user || action.payload.usuario || action.payload.data;
+        state.user = userData;
         state.token = action.payload.token;
+        
+        console.log('Auth Slice - Login Fulfilled:', { userData, token: action.payload.token });
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;

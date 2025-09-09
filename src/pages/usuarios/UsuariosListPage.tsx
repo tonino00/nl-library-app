@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { FiPlus, FiEdit2, FiTrash2, FiEye, FiToggleLeft, FiToggleRight } from 'react-icons/fi';
 import { fetchUsuarios, deleteUsuario, toggleAtivoUsuario } from '../../features/usuarios/usuarioSlice';
@@ -62,6 +62,7 @@ const UsuariosListPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { usuarios, isLoading } = useSelector((state: RootState) => state.usuarios);
   const { user } = useSelector((state: RootState) => state.auth);
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredUsuarios, setFilteredUsuarios] = useState<Usuario[]>([]);
   
@@ -69,11 +70,21 @@ const UsuariosListPage: React.FC = () => {
   const isAdmin = user?.tipo === 'admin';
   
   useEffect(() => {
+    // Verificar se precisamos forçar uma atualização dos dados
+    const forceRefresh = location.state && (location.state as any).forceRefresh;
+    
+    // Buscar usuários ao carregar o componente ou quando forceRefresh for true
     dispatch(fetchUsuarios());
-  }, [dispatch]);
+    
+    // Limpar o state de navegação para evitar atualizações desnecessárias
+    if (forceRefresh && window.history) {
+      window.history.replaceState({}, '', location.pathname);
+    }
+  }, [dispatch, location]);
   
   useEffect(() => {
-    if (usuarios) {
+    // Verifica se usuarios é um array válido
+    if (usuarios && Array.isArray(usuarios)) {
       setFilteredUsuarios(
         usuarios.filter(usuario => 
           usuario.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -81,6 +92,9 @@ const UsuariosListPage: React.FC = () => {
           usuario.documento.toLowerCase().includes(searchTerm.toLowerCase())
         )
       );
+    } else {
+      // Se não for um array válido, inicializa com array vazio
+      setFilteredUsuarios([]);
     }
   }, [usuarios, searchTerm]);
   

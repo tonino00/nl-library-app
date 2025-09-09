@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { FiPlus, FiEdit2, FiTrash2, FiEye, FiFilter } from 'react-icons/fi';
 import { fetchLivros, deleteLivro, fetchLivrosByCategoria, pesquisarLivros } from '../../features/livros/livroSlice';
@@ -82,17 +82,27 @@ const LivrosListPage: React.FC = () => {
   const { livros, isLoading } = useSelector((state: RootState) => state.livros);
   const { categorias } = useSelector((state: RootState) => state.categorias);
   const { user } = useSelector((state: RootState) => state.auth);
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategoria, setSelectedCategoria] = useState('');
   const [filteredLivros, setFilteredLivros] = useState<Livro[]>([]);
   
-  // Verificar se o usuário é admin ou bibliotecário
-  const canEdit = user?.tipo === 'admin' || user?.tipo === 'bibliotecario';
+  // Verificar se o usuário é admin
+  const canEdit = user?.tipo === 'admin';
   
   useEffect(() => {
+    // Verificar se precisamos forçar uma atualização dos dados
+    const forceRefresh = location.state && (location.state as any).forceRefresh;
+    
+    // Buscar livros ao carregar o componente ou quando forceRefresh for true
     dispatch(fetchLivros());
     dispatch(fetchCategorias());
-  }, [dispatch]);
+    
+    // Limpar o state de navegação para evitar atualizações desnecessárias
+    if (forceRefresh && window.history) {
+      window.history.replaceState({}, '', location.pathname);
+    }
+  }, [dispatch, location]);
   
   useEffect(() => {
     // Se uma categoria estiver selecionada e não for 'todas'
@@ -135,7 +145,9 @@ const LivrosListPage: React.FC = () => {
   
   const formatCategoriaName = (categoria: string | any) => {
     if (typeof categoria === 'string') {
-      const foundCategoria = categorias.find(cat => cat._id === categoria);
+      // Verificar se categorias é um array antes de chamar find
+      const foundCategoria = Array.isArray(categorias) ? 
+        categorias.find(cat => cat._id === categoria) : undefined;
       return foundCategoria ? foundCategoria.nome : categoria;
     }
     return categoria?.nome || 'Não categorizado';
@@ -247,7 +259,7 @@ const LivrosListPage: React.FC = () => {
               onChange={handleCategoriaChange}
               options={[
                 { value: 'todas', label: 'Todas as categorias' },
-                ...(categorias.map(cat => ({ value: cat._id || '', label: cat.nome })))
+                ...(Array.isArray(categorias) ? categorias.map(cat => ({ value: cat._id || '', label: cat.nome })) : [])
               ]}
               fullWidth
             />

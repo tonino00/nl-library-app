@@ -131,6 +131,10 @@ const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputProps>(
     const hasLeftIcon = !!leftIcon;
     const hasRightIcon = !!rightIcon;
     
+    // Remove fullWidth from rest props to avoid DOM warnings
+    const inputProps = { ...rest };
+    delete (inputProps as any).fullWidth;
+    
     return (
       <InputWrapper fullWidth={fullWidth}>
         {label && <Label>{label}</Label>}
@@ -143,7 +147,7 @@ const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputProps>(
                 hasLeftIcon={hasLeftIcon}
                 hasRightIcon={hasRightIcon}
                 ref={ref as React.ForwardedRef<HTMLTextAreaElement>}
-                {...rest as React.TextareaHTMLAttributes<HTMLTextAreaElement>}
+                {...inputProps as React.TextareaHTMLAttributes<HTMLTextAreaElement>}
               />
             ) : (
               <StyledInput
@@ -151,7 +155,7 @@ const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputProps>(
                 hasLeftIcon={hasLeftIcon}
                 hasRightIcon={hasRightIcon}
                 ref={ref as React.ForwardedRef<HTMLInputElement>}
-                {...rest as React.InputHTMLAttributes<HTMLInputElement>}
+                {...inputProps as React.InputHTMLAttributes<HTMLInputElement>}
               />
             )
           }

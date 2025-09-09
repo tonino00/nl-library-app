@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
@@ -6,7 +6,8 @@ import { FiArrowLeft, FiEdit2, FiCalendar, FiCheck, FiRepeat, FiAlertTriangle, F
 import { 
   fetchEmprestimoById, 
   finalizarEmprestimo, 
-  renovarEmprestimo 
+  renovarEmprestimo,
+  updateEmprestimo
 } from '../../features/emprestimos/emprestimoSlice';
 import { AppDispatch, RootState } from '../../store';
 import Button from '../../components/ui/Button';
@@ -224,6 +225,9 @@ const EmprestimoDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { emprestimo, isLoading } = useSelector((state: RootState) => state.emprestimos);
+  const [editingDate, setEditingDate] = useState(false);
+  const [newDate, setNewDate] = useState('');
+  const [updatingDate, setUpdatingDate] = useState(false);
   
   useEffect(() => {
     if (id) {
@@ -274,6 +278,47 @@ const EmprestimoDetailPage: React.FC = () => {
       } catch (error: any) {
         toast.error(error || 'Erro ao renovar empréstimo');
       }
+    }
+  };
+  
+  const handleStartEditingDate = () => {
+    if (emprestimo && emprestimo.dataPrevistaDevolucao) {
+      // Formatar a data para o formato YYYY-MM-DD para o input date
+      const date = new Date(emprestimo.dataPrevistaDevolucao);
+      const formattedDate = date.toISOString().split('T')[0];
+      setNewDate(formattedDate);
+      setEditingDate(true);
+    }
+  };
+  
+  const handleCancelEditDate = () => {
+    setEditingDate(false);
+    setNewDate('');
+  };
+  
+  const handleUpdateDate = async () => {
+    if (!id || !newDate || !emprestimo) return;
+    
+    setUpdatingDate(true);
+    try {
+      // Criar um objeto de empréstimo com os mesmos dados do atual,
+      // mas com a data prevista atualizada
+      const emprestimoAtualizado = {
+        ...emprestimo,
+        dataPrevistaDevolucao: new Date(newDate)
+      };
+      
+      await dispatch(updateEmprestimo({ 
+        id, 
+        emprestimo: emprestimoAtualizado
+      })).unwrap();
+      
+      toast.success('Data de devolução atualizada com sucesso!');
+      setEditingDate(false);
+    } catch (error: any) {
+      toast.error(error || 'Erro ao atualizar a data de devolução');
+    } finally {
+      setUpdatingDate(false);
     }
   };
   
@@ -340,8 +385,8 @@ const EmprestimoDetailPage: React.FC = () => {
           <InfoSection>
             <SectionTitle>Usuário</SectionTitle>
             <UserInfo>
-              <Avatar url={usuario?.foto}>
-                {!usuario?.foto && usuario?.nome ? usuario.nome.charAt(0).toUpperCase() : '?'}
+              <Avatar url={usuario?.foto && usuario?.foto.startsWith('http') ? usuario.foto : undefined}>
+                {usuario?.nome ? usuario.nome.charAt(0).toUpperCase() : '?'}
               </Avatar>
               <UserDetails>
                 <UserName>{usuario ? usuario.nome : 'Carregando...'}</UserName>
@@ -366,7 +411,47 @@ const EmprestimoDetailPage: React.FC = () => {
             <InfoItem>
               <FiCalendar />
               <InfoLabel>Data Prevista para Devolução:</InfoLabel>
-              {formatDate(emprestimo.dataPrevistaDevolucao)}
+              {editingDate ? (
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <input 
+                    type="date" 
+                    value={newDate}
+                    onChange={(e) => setNewDate(e.target.value)}
+                    style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }}
+                  />
+                  <div style={{ display: 'flex', gap: '5px' }}>
+                    <Button 
+                      variant="primary" 
+                      size="small" 
+                      onClick={handleUpdateDate}
+                      isLoading={updatingDate}
+                    >
+                      Salvar
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="small" 
+                      onClick={handleCancelEditDate}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {formatDate(emprestimo.dataPrevistaDevolucao)}
+                  {emprestimo.status !== 'devolvido' && (
+                    <Button 
+                      variant="outline" 
+                      size="small" 
+                      style={{ marginLeft: '10px' }}
+                      onClick={handleStartEditingDate}
+                    >
+                      Editar
+                    </Button>
+                  )}
+                </>
+              )}
             </InfoItem>
             
             {emprestimo.dataDevolucao && (

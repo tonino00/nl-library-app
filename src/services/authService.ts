@@ -11,7 +11,7 @@ interface LoginCredentials {
   senha: string;
 }
 
-const ENDPOINT = '/auth';
+const ENDPOINT = '/api/usuarios';
 
 export const authService = {
   login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
@@ -20,7 +20,11 @@ export const authService = {
     // Salvar token e usuário no localStorage
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      // A API retorna o usuário em diferentes formatos, verificar todas as possíveis estruturas
+      const userData = response.data.user || response.data.usuario || response.data.data;
+      console.log('Login Response Data:', response.data);
+      console.log('Extracted User Data:', userData);
+      localStorage.setItem('user', JSON.stringify(userData));
     }
     
     return response.data;
@@ -32,7 +36,7 @@ export const authService = {
   },
 
   register: async (usuario: Usuario): Promise<Usuario> => {
-    const response = await api.post(`${ENDPOINT}/register`, usuario);
+    const response = await api.post(ENDPOINT, usuario);
     return response.data;
   },
 
@@ -56,11 +60,44 @@ export const authService = {
   },
 
   checkAuth: async (): Promise<Usuario> => {
-    const response = await api.get(`${ENDPOINT}/me`);
-    return response.data;
+    try {
+      // Primeiro tentamos recuperar o objeto de usuário do localStorage
+      const userStr = localStorage.getItem('user');
+      let usuario = null;
+
+      if (userStr && userStr !== 'undefined') {
+        try {
+          usuario = JSON.parse(userStr);
+        } catch (e) {
+          console.error('Erro ao fazer parse do usuário do localStorage:', e);
+        }
+      }
+
+      // Se não temos o usuário ou o ID, tentamos uma requisição básica para verificar se o token é válido
+      if (!usuario || !usuario._id) {
+        // Usar uma requisição simples apenas para verificar se o token está válido
+        await api.get(`${ENDPOINT}?limit=1`);
+        
+        // Se chegamos até aqui sem um erro, o token é válido, mas não temos o usuário
+        // Retornar um objeto vazio para manter a sessão ativa
+        return usuario || {} as Usuario;
+      } else {
+        // Se temos o ID do usuário, tentamos atualizar suas informações
+        const response = await api.get(`${ENDPOINT}/${usuario._id}`);
+        const updatedUser = response.data.data || response.data;
+        
+        // Atualizamos o cache do usuário
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        return updatedUser;
+      }
+    } catch (error) {
+      console.error('Erro ao verificar autenticação:', error);
+      throw error;
+    }
   },
 
-  updateSenha: async (id: string, senhaAntiga: string, senhaNova: string): Promise<void> => {
-    await api.post(`${ENDPOINT}/update-senha`, { id, senhaAntiga, senhaNova });
+  updateSenha: async (id: string, senhaAtual: string, novaSenha: string): Promise<void> => {
+    await api.patch(`${ENDPOINT}/${id}/senha`, { senhaAtual, novaSenha });
   }
 };

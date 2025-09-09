@@ -84,7 +84,7 @@ const RegisterPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [noAdminExists, setNoAdminExists] = useState(false);
-  const [userType, setUserType] = useState<'leitor' | 'admin' | 'bibliotecario'>('leitor');
+  const [userType, setUserType] = useState<'leitor' | 'admin'>('leitor');
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   

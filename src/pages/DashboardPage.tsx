@@ -38,14 +38,14 @@ const StatContent = styled.div`
   padding: 20px;
 `;
 
-const StatIcon = styled.div<{ bgColor: string }>`
+const StatIcon = styled.div<{ $bgColor: string }>`
   display: flex;
   align-items: center;
   justify-content: center;
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background-color: ${({ bgColor }) => bgColor};
+  background-color: ${({ $bgColor }) => $bgColor};
   color: white;
   margin-right: 20px;
 `;
@@ -70,6 +70,7 @@ const SectionTitle = styled.h2`
   font-size: 1.5rem;
   color: var(--text-color);
   margin: 30px 0 20px;
+  text-align: center;
 `;
 
 const CardGrid = styled.div`
@@ -111,14 +112,14 @@ const ItemMeta = styled.div`
 
 const ItemDate = styled.span``;
 
-const StatusBadge = styled.span<{ status: string }>`
+const StatusBadge = styled.span<{ $status: string }>`
   padding: 4px 8px;
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 500;
   
-  ${({ status }) => {
-    switch (status) {
+  ${({ $status }) => {
+    switch ($status) {
       case 'pendente':
         return `
           background-color: rgba(255, 193, 7, 0.2);
@@ -175,30 +176,36 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     if (!livrosLoading && !categoriasLoading && !usuariosLoading && !emprestimosLoading) {
       setStats({
-        livrosTotal: livros.length,
-        livrosDisponiveis: livros.reduce((total, livro) => total + (livro.disponiveis || 0), 0),
-        emprestimosAtivos: emprestimos.filter(e => e.status === 'pendente' || e.status === 'renovado').length,
-        emprestimosAtrasados: emprestimos.filter(e => e.status === 'atrasado').length,
-        usuariosAtivos: usuarios.filter(u => u.ativo).length,
-        categoriasTotal: categorias.length
+        livrosTotal: Array.isArray(livros) ? livros.length : 0,
+        livrosDisponiveis: Array.isArray(livros) ? livros.reduce((total, livro) => total + (livro.disponiveis || 0), 0) : 0,
+        emprestimosAtivos: Array.isArray(emprestimos) ? emprestimos.filter(e => e.status === 'pendente' || e.status === 'renovado').length : 0,
+        emprestimosAtrasados: Array.isArray(emprestimos) ? emprestimos.filter(e => e.status === 'atrasado').length : 0,
+        usuariosAtivos: Array.isArray(usuarios) ? usuarios.filter(u => u.ativo).length : 0,
+        categoriasTotal: Array.isArray(categorias) ? categorias.length : 0
       });
     }
   }, [livros, categorias, usuarios, emprestimos, livrosLoading, categoriasLoading, usuariosLoading, emprestimosLoading]);
   
   // Ordenar empréstimos mais recentes
-  const emprestimosRecentes = [...emprestimos]
-    .sort((a, b) => new Date(b.dataEmprestimo || '').getTime() - new Date(a.dataEmprestimo || '').getTime())
-    .slice(0, 5);
+  const emprestimosRecentes = Array.isArray(emprestimos) 
+    ? [...emprestimos]
+        .sort((a, b) => new Date(b.dataEmprestimo || '').getTime() - new Date(a.dataEmprestimo || '').getTime())
+        .slice(0, 5)
+    : [];
 
   // Ordenar livros mais recentes
-  const livrosRecentes = [...livros]
-    .sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime())
-    .slice(0, 5);
+  const livrosRecentes = Array.isArray(livros)
+    ? [...livros]
+        .sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime())
+        .slice(0, 5)
+    : [];
 
   // Encontrar empréstimos atrasados
-  const emprestimosAtrasados = [...emprestimos]
-    .filter(e => e.status === 'atrasado')
-    .slice(0, 5);
+  const emprestimosAtrasados = Array.isArray(emprestimos)
+    ? [...emprestimos]
+        .filter(e => e.status === 'atrasado')
+        .slice(0, 5)
+    : [];
   
   const formatDate = (date?: Date) => {
     if (!date) return '-';
@@ -213,7 +220,7 @@ const DashboardPage: React.FC = () => {
       <StatsGrid>
         <StatCard>
           <StatContent>
-            <StatIcon bgColor="var(--primary-color)">
+            <StatIcon $bgColor="var(--primary-color)">
               <FiBook size={24} />
             </StatIcon>
             <StatInfo>
@@ -225,7 +232,7 @@ const DashboardPage: React.FC = () => {
         
         <StatCard>
           <StatContent>
-            <StatIcon bgColor="var(--success-color)">
+            <StatIcon $bgColor="var(--success-color)">
               <FiRepeat size={24} />
             </StatIcon>
             <StatInfo>
@@ -237,7 +244,7 @@ const DashboardPage: React.FC = () => {
         
         <StatCard>
           <StatContent>
-            <StatIcon bgColor="var(--danger-color)">
+            <StatIcon $bgColor="var(--danger-color)">
               <FiAlertTriangle size={24} />
             </StatIcon>
             <StatInfo>
@@ -249,7 +256,7 @@ const DashboardPage: React.FC = () => {
         
         <StatCard>
           <StatContent>
-            <StatIcon bgColor="var(--info-color)">
+            <StatIcon $bgColor="var(--info-color)">
               <FiUsers size={24} />
             </StatIcon>
             <StatInfo>
@@ -290,7 +297,7 @@ const DashboardPage: React.FC = () => {
                         <div>
                           Devolução: {formatDate(emprestimo.dataPrevistaDevolucao)}
                         </div>
-                        <StatusBadge status={emprestimo.status || 'pendente'}>
+                        <StatusBadge $status={emprestimo.status || 'pendente'}>
                           {emprestimo.status || 'pendente'}
                         </StatusBadge>
                       </ItemMeta>
@@ -315,7 +322,7 @@ const DashboardPage: React.FC = () => {
         </div>
         
         <div>
-          <SectionTitle>Livros Adicionados Recentemente</SectionTitle>
+          <SectionTitle>Livros  Recentemente</SectionTitle>
           <RecentItemsCard>
             {livrosLoading ? (
               <NoItems>Carregando...</NoItems>
@@ -383,7 +390,7 @@ const DashboardPage: React.FC = () => {
                       <ItemMeta>
                         <div>Usuário: {usuarioNome}</div>
                         <div>
-                          <StatusBadge status="atrasado">
+                          <StatusBadge $status="atrasado">
                             Atrasado
                           </StatusBadge>
                         </div>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { FiUser, FiLock, FiHome } from 'react-icons/fi';
+import { FiUser, FiLock, FiBookOpen } from 'react-icons/fi';
 import { login } from '../features/auth/authSlice';
 import { RootState } from '../store';
 import { AppDispatch } from '../store';
@@ -109,7 +109,7 @@ const LoginPage: React.FC = () => {
         <div style={{ padding: '2rem' }}>
           <Logo>
                 <Icon>
-                  <FiHome />
+                  <FiBookOpen />
                 </Icon>
             <p>Sistema de Gerenciamento de Biblioteca</p>
           </Logo>

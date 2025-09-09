@@ -3,19 +3,21 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import PrivateRoute from '../components/auth/PrivateRoute';
 
-// Importar páginas já implementadas e placeholders para as não implementadas
+// Importar páginas que não têm implementação real ainda
 import {
-  DashboardPage,
-  LivroDetailPage,
-  LivroFormPage,
-  CategoriaFormPage,
-  UsuarioDetailPage,
-  UsuarioFormPage,
-  EmprestimoDetailPage,
-  EmprestimoFormPage,
-  ConfiguracoesPage,
   NotFoundPage
 } from './placeholders';
+
+// Importação dos componentes reais
+const DashboardPage = lazy(() => import('../pages/DashboardPage'));
+const LivroFormPage = lazy(() => import('../pages/livros/LivroFormPage'));
+const LivroDetailPage = lazy(() => import('../pages/livros/LivroDetailPage'));
+const CategoriaFormPage = lazy(() => import('../pages/categorias/CategoriaFormPage'));
+const UsuarioFormPage = lazy(() => import('../pages/usuarios/UsuarioFormPage'));
+const UsuarioDetailPage = lazy(() => import('../pages/usuarios/UsuarioDetailPage'));
+const EmprestimoFormPage = lazy(() => import('../pages/emprestimos/EmprestimoFormPage'));
+const EmprestimoDetailPage = lazy(() => import('../pages/emprestimos/EmprestimoDetailPage'));
+const ConfiguracoesPage = lazy(() => import('../pages/ConfiguracoesPage'));
 
 // Componente de carregamento
 const LoadingFallback = () => (
@@ -33,6 +35,7 @@ const CategoriasListPage = lazy(() => import('../pages/categorias/CategoriasList
 const UsuariosListPage = lazy(() => import('../pages/usuarios/UsuariosListPage'));
 const EmprestimosListPage = lazy(() => import('../pages/emprestimos/EmprestimosListPage'));
 const UnauthorizedPage = lazy(() => import('../pages/UnauthorizedPage'));
+const ApiTestPage = lazy(() => import('../pages/ApiTest'));
 
 const AppRoutes: React.FC = () => {
   return (
@@ -60,12 +63,12 @@ const AppRoutes: React.FC = () => {
           
           {/* Formulários de livros - apenas bibliotecários e admins */}
           <Route path="/livros/novo" element={
-            <PrivateRoute requiredRole="bibliotecario">
+            <PrivateRoute requiredRole="admin">
               <LivroFormPage />
             </PrivateRoute>
           } />
           <Route path="/livros/editar/:id" element={
-            <PrivateRoute requiredRole="bibliotecario">
+            <PrivateRoute requiredRole="admin">
               <LivroFormPage />
             </PrivateRoute>
           } />
@@ -75,56 +78,56 @@ const AppRoutes: React.FC = () => {
           
           {/* Formulários de categorias - apenas bibliotecários e admins */}
           <Route path="/categorias/nova" element={
-            <PrivateRoute requiredRole="bibliotecario">
+            <PrivateRoute requiredRole="admin">
               <CategoriaFormPage />
             </PrivateRoute>
           } />
           <Route path="/categorias/editar/:id" element={
-            <PrivateRoute requiredRole="bibliotecario">
+            <PrivateRoute requiredRole="admin">
               <CategoriaFormPage />
             </PrivateRoute>
           } />
           
           {/* Usuários - apenas bibliotecários e admins */}
           <Route path="/usuarios" element={
-            <PrivateRoute requiredRole="bibliotecario">
+            <PrivateRoute requiredRole="admin">
               <UsuariosListPage />
             </PrivateRoute>
           } />
           <Route path="/usuarios/:id" element={
-            <PrivateRoute requiredRole="bibliotecario">
+            <PrivateRoute requiredRole="admin">
               <UsuarioDetailPage />
             </PrivateRoute>
           } />
           <Route path="/usuarios/novo" element={
-            <PrivateRoute requiredRole="bibliotecario">
+            <PrivateRoute requiredRole="admin">
               <UsuarioFormPage />
             </PrivateRoute>
           } />
           <Route path="/usuarios/editar/:id" element={
-            <PrivateRoute requiredRole="bibliotecario">
+            <PrivateRoute requiredRole="admin">
               <UsuarioFormPage />
             </PrivateRoute>
           } />
           
           {/* Empréstimos - apenas bibliotecários e admins */}
           <Route path="/emprestimos" element={
-            <PrivateRoute requiredRole="bibliotecario">
+            <PrivateRoute requiredRole="admin">
               <EmprestimosListPage />
             </PrivateRoute>
           } />
           <Route path="/emprestimos/:id" element={
-            <PrivateRoute requiredRole="bibliotecario">
+            <PrivateRoute requiredRole="admin">
               <EmprestimoDetailPage />
             </PrivateRoute>
           } />
           <Route path="/emprestimos/novo" element={
-            <PrivateRoute requiredRole="bibliotecario">
+            <PrivateRoute requiredRole="admin">
               <EmprestimoFormPage />
             </PrivateRoute>
           } />
           <Route path="/emprestimos/editar/:id" element={
-            <PrivateRoute requiredRole="bibliotecario">
+            <PrivateRoute requiredRole="admin">
               <EmprestimoFormPage />
             </PrivateRoute>
           } />
@@ -133,6 +136,13 @@ const AppRoutes: React.FC = () => {
           <Route path="/configuracoes" element={
             <PrivateRoute requiredRole="admin">
               <ConfiguracoesPage />
+            </PrivateRoute>
+          } />
+          
+          {/* Página de teste da API */}
+          <Route path="/api-test" element={
+            <PrivateRoute requiredRole="admin">
+              <ApiTestPage />
             </PrivateRoute>
           } />
           

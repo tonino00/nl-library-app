@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { FiPlus, FiEye, FiCheck, FiRepeat, FiFilter } from 'react-icons/fi';
 import { fetchEmprestimos, finalizarEmprestimo, renovarEmprestimo } from '../../features/emprestimos/emprestimoSlice';
@@ -87,16 +87,27 @@ const StatusBadge = styled.span<{ status: string }>`
 const EmprestimosListPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { emprestimos, isLoading } = useSelector((state: RootState) => state.emprestimos);
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [filteredEmprestimos, setFilteredEmprestimos] = useState<Emprestimo[]>([]);
   
   useEffect(() => {
+    // Verificar se precisamos forçar uma atualização dos dados
+    const forceRefresh = location.state && (location.state as any).forceRefresh;
+    
+    // Buscar empréstimos ao carregar o componente ou quando forceRefresh for true
     dispatch(fetchEmprestimos());
-  }, [dispatch]);
+    
+    // Limpar o state de navegação para evitar atualizações desnecessárias
+    if (forceRefresh && window.history) {
+      window.history.replaceState({}, '', location.pathname);
+    }
+  }, [dispatch, location]);
   
   useEffect(() => {
-    if (emprestimos) {
+    // Verifica se emprestimos é um array válido
+    if (emprestimos && Array.isArray(emprestimos)) {
       let filtered = [...emprestimos];
       
       // Aplicar filtro de status se selecionado
@@ -121,6 +132,9 @@ const EmprestimosListPage: React.FC = () => {
       }
       
       setFilteredEmprestimos(filtered);
+    } else {
+      // Se não for um array válido, inicializa com array vazio
+      setFilteredEmprestimos([]);
     }
   }, [emprestimos, searchTerm, statusFilter]);
   

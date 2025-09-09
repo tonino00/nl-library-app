@@ -169,7 +169,7 @@ const EmprestimoFormPage: React.FC = () => {
   }, [emprestimo, isEditMode, reset, setValue, usuarioId, livroId]);
   
   const getLivroSelecionado = () => {
-    if (!selectedLivroId) return null;
+    if (!selectedLivroId || !Array.isArray(livros)) return null;
     return livros.find(livro => livro._id === selectedLivroId);
   };
   
@@ -204,7 +204,8 @@ const EmprestimoFormPage: React.FC = () => {
         await dispatch(createEmprestimo(emprestimoData)).unwrap();
         toast.success('Empréstimo criado com sucesso!');
       }
-      navigate('/emprestimos');
+      // Passar o parâmetro forceRefresh para a página de listagem
+      navigate('/emprestimos', { state: { forceRefresh: true } });
     } catch (error: any) {
       toast.error(error || 'Ocorreu um erro ao salvar o empréstimo');
     } finally {
@@ -245,9 +246,11 @@ const EmprestimoFormPage: React.FC = () => {
                 label="Usuário"
                 {...register('usuario', { required: 'O usuário é obrigatório' })}
                 error={errors.usuario?.message}
-                options={usuarios
-                  .filter(u => u.ativo !== false)
-                  .map(user => ({ value: user._id || '', label: `${user.nome} (${user.email})` }))
+                options={Array.isArray(usuarios) ? 
+                  usuarios
+                    .filter(u => u.ativo !== false)
+                    .map(user => ({ value: user._id || '', label: `${user.nome} (${user.email})` }))
+                  : []
                 }
                 fullWidth
                 disabled={isEditMode}
@@ -257,10 +260,12 @@ const EmprestimoFormPage: React.FC = () => {
                 label="Livro"
                 {...register('livro', { required: 'O livro é obrigatório' })}
                 error={errors.livro?.message}
-                options={livros.map(livro => ({
-                  value: livro._id || '',
-                  label: `${livro.titulo} - ${(livro.disponiveis !== undefined && livro.disponiveis > 0) || isEditMode ? 'Disponível' : 'Indisponível'}`
-                }))}
+                options={Array.isArray(livros) ? 
+                  livros.map(livro => ({
+                    value: livro._id || '',
+                    label: `${livro.titulo} - ${(livro.disponiveis !== undefined && livro.disponiveis > 0) || isEditMode ? 'Disponível' : 'Indisponível'}`
+                  }))
+                : []}
                 fullWidth
                 onChange={handleLivroChange}
                 disabled={isEditMode}
@@ -299,7 +304,7 @@ const EmprestimoFormPage: React.FC = () => {
                 type="submit"
                 leftIcon={<FiSave />}
                 isLoading={submitting}
-                disabled={!isEditMode && !livroDisponivelParaEmprestimo && !!selectedLivroId}
+                disabled={!isEditMode && !!selectedLivroId && !livroDisponivelParaEmprestimo}
               >
                 {isEditMode ? 'Atualizar' : 'Salvar'}
               </Button>

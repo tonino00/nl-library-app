@@ -11,17 +11,17 @@ import {
 } from '../../features/usuarios/usuarioSlice';
 import { AppDispatch, RootState } from '../../store';
 import { Usuario } from '../../types';
+import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
+import Select from '../../components/ui/Select';
+import Card from '../../components/ui/Card';
+import { toast } from 'react-toastify';
 
 // Interface estendida para incluir o campo confirmarSenha
 interface UsuarioFormData extends Omit<Usuario, 'dataNascimento'> {
   dataNascimento: string; // Formato de data para formulário
   confirmarSenha?: string;
 }
-import Button from '../../components/ui/Button';
-import Input from '../../components/ui/Input';
-import Select from '../../components/ui/Select';
-import Card from '../../components/ui/Card';
-import { toast } from 'react-toastify';
 
 const PageHeader = styled.div`
   display: flex;
@@ -152,7 +152,8 @@ const UsuarioFormPage: React.FC = () => {
         await dispatch(createUsuario(usuarioData)).unwrap();
         toast.success('Usuário criado com sucesso!');
       }
-      navigate('/usuarios');
+      // Passar o parâmetro forceRefresh para a página de listagem
+      navigate('/usuarios', { state: { forceRefresh: true } });
     } catch (error: any) {
       toast.error(error || 'Ocorreu um erro ao salvar o usuário');
     } finally {
@@ -162,7 +163,6 @@ const UsuarioFormPage: React.FC = () => {
   
   const tipoUsuarioOptions = [
     { value: 'leitor', label: 'Leitor' },
-    { value: 'bibliotecario', label: 'Bibliotecário' },
     { value: 'admin', label: 'Administrador' }
   ];
   
