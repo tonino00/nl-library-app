@@ -1,0 +1,271 @@
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
+import styled from 'styled-components';
+import { FiPlus, FiEdit2, FiTrash2, FiEye, FiFilter } from 'react-icons/fi';
+import { fetchLivros, deleteLivro, fetchLivrosByCategoria, pesquisarLivros } from '../../features/livros/livroSlice';
+import { fetchCategorias } from '../../features/categorias/categoriaSlice';
+import { AppDispatch, RootState } from '../../store';
+import Button from '../../components/ui/Button';
+import Table, { Column } from '../../components/ui/Table';
+import SearchBar from '../../components/ui/SearchBar';
+import Select from '../../components/ui/Select';
+import Card from '../../components/ui/Card';
+import { Livro } from '../../types';
+import { toast } from 'react-toastify';
+
+const PageHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+`;
+
+const PageTitle = styled.h1`
+  font-size: 1.75rem;
+  color: var(--text-color);
+`;
+
+const ActionButtons = styled.div`
+  display: flex;
+  gap: 10px;
+`;
+
+const SearchContainer = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  align-items: flex-end;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+`;
+
+const FilterContainer = styled.div`
+  min-width: 200px;
+`;
+
+const BookCover = styled.img`
+  width: 40px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+`;
+
+const DefaultCover = styled.div`
+  width: 40px;
+  height: 60px;
+  background-color: #eee;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--light-text-color);
+  font-size: 20px;
+`;
+
+const AvailabilityStatus = styled.span<{ available: boolean }>`
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: ${({ available }) => available ? 'rgba(40, 167, 69, 0.2)' : 'rgba(220, 53, 69, 0.2)'};
+  color: ${({ available }) => available ? '#155724' : '#721c24'};
+`;
+
+const LivrosListPage: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { livros, isLoading } = useSelector((state: RootState) => state.livros);
+  const { categorias } = useSelector((state: RootState) => state.categorias);
+  const { user } = useSelector((state: RootState) => state.auth);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategoria, setSelectedCategoria] = useState('');
+  const [filteredLivros, setFilteredLivros] = useState<Livro[]>([]);
+  
+  // Verificar se o usuário é admin ou bibliotecário
+  const canEdit = user?.tipo === 'admin' || user?.tipo === 'bibliotecario';
+  
+  useEffect(() => {
+    dispatch(fetchLivros());
+    dispatch(fetchCategorias());
+  }, [dispatch]);
+  
+  useEffect(() => {
+    // Se uma categoria estiver selecionada e não for 'todas'
+    if (selectedCategoria && selectedCategoria !== 'todas') {
+      dispatch(fetchLivrosByCategoria(selectedCategoria));
+    } else if (searchTerm) {
+      dispatch(pesquisarLivros(searchTerm));
+    } else {
+      setFilteredLivros(livros);
+    }
+  }, [selectedCategoria, dispatch, searchTerm]);
+  
+  useEffect(() => {
+    setFilteredLivros(livros);
+  }, [livros]);
+  
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    if (term) {
+      dispatch(pesquisarLivros(term));
+    } else {
+      dispatch(fetchLivros());
+    }
+  };
+  
+  const handleCategoriaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedCategoria(e.target.value);
+  };
+  
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este livro?')) {
+      try {
+        await dispatch(deleteLivro(id)).unwrap();
+        toast.success('Livro excluído com sucesso!');
+      } catch (error: any) {
+        toast.error(error || 'Erro ao excluir livro');
+      }
+    }
+  };
+  
+  const formatCategoriaName = (categoria: string | any) => {
+    if (typeof categoria === 'string') {
+      const foundCategoria = categorias.find(cat => cat._id === categoria);
+      return foundCategoria ? foundCategoria.nome : categoria;
+    }
+    return categoria?.nome || 'Não categorizado';
+  };
+  
+  const columns: Column<Livro>[] = [
+    {
+      header: '',
+      width: '50px',
+      render: (item) => (
+        item.capa ? (
+          <BookCover src={item.capa} alt={item.titulo} />
+        ) : (
+          <DefaultCover>📕</DefaultCover>
+        )
+      ),
+    },
+    {
+      header: 'Título',
+      key: 'titulo',
+    },
+    {
+      header: 'Autor',
+      key: 'autor',
+    },
+    {
+      header: 'Categoria',
+      render: (item) => formatCategoriaName(item.categoria),
+    },
+    {
+      header: 'Disponibilidade',
+      render: (item) => (
+        <div>
+          <AvailabilityStatus available={(item.disponiveis || 0) > 0}>
+            {item.disponiveis || 0}/{item.quantidade || 0}
+          </AvailabilityStatus>
+        </div>
+      ),
+    },
+    {
+      header: 'Ações',
+      render: (item) => (
+        <ActionButtons>
+          <Button
+            as={Link}
+            to={`/livros/${item._id}`}
+            variant="info"
+            size="small"
+            leftIcon={<FiEye size={16} />}
+          >
+            Ver
+          </Button>
+          {canEdit && (
+            <>
+              <Button
+                as={Link}
+                to={`/livros/editar/${item._id}`}
+                variant="secondary"
+                size="small"
+                leftIcon={<FiEdit2 size={16} />}
+              >
+                Editar
+              </Button>
+              <Button
+                variant="danger"
+                size="small"
+                leftIcon={<FiTrash2 size={16} />}
+                onClick={() => item._id && handleDelete(item._id)}
+              >
+                Excluir
+              </Button>
+            </>
+          )}
+        </ActionButtons>
+      ),
+      align: 'right',
+      width: '280px',
+    },
+  ];
+  
+  return (
+    <div>
+      <PageHeader>
+        <PageTitle>Livros</PageTitle>
+        {canEdit && (
+          <Button
+            as={Link}
+            to="/livros/novo"
+            variant="primary"
+            leftIcon={<FiPlus size={16} />}
+          >
+            Novo Livro
+          </Button>
+        )}
+      </PageHeader>
+      
+      <Card>
+        <SearchContainer>
+          <div style={{ flexGrow: 1 }}>
+            <SearchBar
+              onSearch={handleSearch}
+              placeholder="Pesquisar por título, autor ou ISBN..."
+            />
+          </div>
+          <FilterContainer>
+            <Select
+              label="Filtrar por categoria"
+              value={selectedCategoria}
+              onChange={handleCategoriaChange}
+              options={[
+                { value: 'todas', label: 'Todas as categorias' },
+                ...(categorias.map(cat => ({ value: cat._id || '', label: cat.nome })))
+              ]}
+              fullWidth
+            />
+          </FilterContainer>
+        </SearchContainer>
+        
+        <Table
+          columns={columns}
+          data={filteredLivros}
+          keyExtractor={(item) => item._id || ''}
+          isLoading={isLoading}
+          emptyMessage="Nenhum livro encontrado"
+          hoverable
+          striped
+        />
+      </Card>
+    </div>
+  );
+};
+
+export default LivrosListPage;
