@@ -642,7 +642,7 @@ const DashboardPage: React.FC = () => {
             </div>
             
             <div>
-              <SectionTitle>Livros Recentementes</SectionTitle>
+              <SectionTitle>Livros Catalogados</SectionTitle>
               <RecentItemsCard>
                 {livrosLoading ? (
                   <NoItems>Carregando...</NoItems>
