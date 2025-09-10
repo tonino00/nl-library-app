@@ -10,6 +10,7 @@ import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import Table, { Column } from '../../components/ui/Table';
 import { Emprestimo } from '../../types';
+import { toast } from 'react-toastify';
 
 const PageHeader = styled.div`
   display: flex;
@@ -134,28 +135,6 @@ const LivroDetailPage: React.FC = () => {
     }
   }, [dispatch, id]);
   
-  // Debug para verificar os dados dos empréstimos
-  useEffect(() => {
-    if (emprestimos && emprestimos.length > 0) {
-      console.log('Empréstimos recebidos:', emprestimos);
-      // Verificar especificamente o campo dataDevolucao
-      emprestimos.forEach((emp, index) => {
-        console.log(`Empréstimo ${index}, ID: ${emp._id}`);
-        console.log(`  - Status: ${emp.status}`);
-        console.log(`  - dataDevolucao: ${emp.dataDevolucao ? 'presente' : 'ausente'}, valor: ${emp.dataDevolucao}`);
-        console.log(`  - tipo dataDevolucao: ${emp.dataDevolucao ? typeof emp.dataDevolucao : 'N/A'}`);
-        
-        if (emp.dataDevolucao && typeof emp.dataDevolucao === 'string') {
-          try {
-            const parsedDate = new Date(emp.dataDevolucao);
-            console.log(`  - dataDevolucao parsed: ${parsedDate.toLocaleDateString()}`);
-          } catch (error) {
-            console.log(`  - erro ao converter dataDevolucao: ${error}`);
-          }
-        }
-      });
-    }
-  }, [emprestimos]);
   
   const formatCategoriaName = () => {
     if (!livro || !livro.categoria) return 'Não categorizado';

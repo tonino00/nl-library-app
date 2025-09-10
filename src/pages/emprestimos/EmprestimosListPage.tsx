@@ -287,6 +287,7 @@ const EmprestimosListPage: React.FC = () => {
                 { value: 'todos', label: 'Todos os status' },
                 { value: 'pendente', label: 'Pendentes' },
                 { value: 'renovado', label: 'Renovados' },
+                { value: 'reservado', label: 'Reservado' },
                 { value: 'devolvido', label: 'Devolvidos' },
                 { value: 'atrasado', label: 'Atrasados' },
               ]}

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
+import useAuth from '../hooks/useAuth';
 import styled from 'styled-components';
 import { FiBook, FiUsers, FiRepeat, FiAlertTriangle, FiFolder } from 'react-icons/fi';
 import { fetchLivros } from '../features/livros/livroSlice';
 import { fetchCategorias } from '../features/categorias/categoriaSlice';
-import { fetchEmprestimos } from '../features/emprestimos/emprestimoSlice';
+import { fetchEmprestimos, fetchEmprestimosByUsuario } from '../features/emprestimos/emprestimoSlice';
 import { fetchUsuarios } from '../features/usuarios/usuarioSlice';
 import { AppDispatch, RootState } from '../store';
 import Card from '../components/ui/Card';
@@ -156,6 +157,7 @@ const DashboardPage: React.FC = () => {
   const { categorias, isLoading: categoriasLoading } = useSelector((state: RootState) => state.categorias);
   const { usuarios, isLoading: usuariosLoading } = useSelector((state: RootState) => state.usuarios);
   const { emprestimos, isLoading: emprestimosLoading } = useSelector((state: RootState) => state.emprestimos);
+  const { user } = useAuth();
   
   const [stats, setStats] = useState({
     livrosTotal: 0,
@@ -163,28 +165,89 @@ const DashboardPage: React.FC = () => {
     emprestimosAtivos: 0,
     emprestimosAtrasados: 0,
     usuariosAtivos: 0,
-    categoriasTotal: 0
+    categoriasTotal: 0,
+    // Reader-specific stats
+    readerBorrowedBooksCount: 0,
+    readerActiveLoansCount: 0
   });
   
   useEffect(() => {
+    // Always fetch books and categories for all users
     dispatch(fetchLivros());
     dispatch(fetchCategorias());
-    dispatch(fetchUsuarios());
-    dispatch(fetchEmprestimos());
-  }, [dispatch]);
+    
+    if (user?.tipo === 'leitor' && user?._id) {
+      // For readers, only fetch their own emprestimos
+      dispatch(fetchEmprestimosByUsuario(user._id));
+    } else if (user?.tipo !== 'leitor') {
+      // For admins, fetch all users and emprestimos
+      dispatch(fetchUsuarios());
+      dispatch(fetchEmprestimos());
+    }
+  }, [dispatch, user?.tipo, user?._id]);
   
   useEffect(() => {
-    if (!livrosLoading && !categoriasLoading && !usuariosLoading && !emprestimosLoading) {
-      setStats({
+    // Check if all necessary data is loaded based on user type
+    const isDataLoaded = user?.tipo === 'leitor'
+      ? !livrosLoading && !categoriasLoading && !emprestimosLoading
+      : !livrosLoading && !categoriasLoading && !usuariosLoading && !emprestimosLoading;
+    
+    if (isDataLoaded) {
+      // Calcular empréstimos do leitor atual
+      const emprestimosDoLeitorCalc = Array.isArray(emprestimos) && user
+        ? emprestimos.filter(emp => {
+            if (typeof emp.usuario === 'string') {
+              return emp.usuario === user._id;
+            } else if (emp.usuario && typeof emp.usuario === 'object') {
+              return emp.usuario._id === user._id;
+            }
+            return false;
+          })
+        : [];
+
+      // Contar livros únicos emprestados pelo leitor (evitar duplicatas)
+      const livrosUnicos = new Set();
+      emprestimosDoLeitorCalc.forEach(emp => {
+        if (typeof emp.livro === 'string') {
+          livrosUnicos.add(emp.livro);
+        } else if (emp.livro && typeof emp.livro === 'object') {
+          livrosUnicos.add(emp.livro._id);
+        }
+      });
+
+      // Contar empréstimos ativos do leitor
+      const emprestimosAtivosDoLeitor = emprestimosDoLeitorCalc.filter(
+        e => e.status === 'pendente' || e.status === 'renovado'
+      ).length;
+      
+      // Base stats that are always available regardless of user type
+      const baseStats = {
         livrosTotal: Array.isArray(livros) ? livros.length : 0,
         livrosDisponiveis: Array.isArray(livros) ? livros.reduce((total, livro) => total + (livro.disponiveis || 0), 0) : 0,
-        emprestimosAtivos: Array.isArray(emprestimos) ? emprestimos.filter(e => e.status === 'pendente' || e.status === 'renovado').length : 0,
-        emprestimosAtrasados: Array.isArray(emprestimos) ? emprestimos.filter(e => e.status === 'atrasado').length : 0,
-        usuariosAtivos: Array.isArray(usuarios) ? usuarios.filter(u => u.ativo).length : 0,
-        categoriasTotal: Array.isArray(categorias) ? categorias.length : 0
-      });
+        categoriasTotal: Array.isArray(categorias) ? categorias.length : 0,
+        readerBorrowedBooksCount: livrosUnicos.size,
+        readerActiveLoansCount: emprestimosAtivosDoLeitor
+      };
+      
+      // For admin users, add admin-specific stats
+      if (user?.tipo !== 'leitor') {
+        setStats({
+          ...baseStats,
+          emprestimosAtivos: Array.isArray(emprestimos) ? emprestimos.filter(e => e.status === 'pendente' || e.status === 'renovado').length : 0,
+          emprestimosAtrasados: Array.isArray(emprestimos) ? emprestimos.filter(e => e.status === 'atrasado').length : 0,
+          usuariosAtivos: Array.isArray(usuarios) ? usuarios.filter(u => u.ativo).length : 0,
+        });
+      } else {
+        // For reader users, set default values for admin-specific stats
+        setStats({
+          ...baseStats,
+          emprestimosAtivos: 0,
+          emprestimosAtrasados: 0,
+          usuariosAtivos: 0,
+        });
+      }
     }
-  }, [livros, categorias, usuarios, emprestimos, livrosLoading, categoriasLoading, usuariosLoading, emprestimosLoading]);
+  }, [livros, categorias, usuarios, emprestimos, livrosLoading, categoriasLoading, usuariosLoading, emprestimosLoading, user?.tipo]);
   
   // Ordenar empréstimos mais recentes
   const emprestimosRecentes = Array.isArray(emprestimos) 
@@ -192,6 +255,66 @@ const DashboardPage: React.FC = () => {
         .sort((a, b) => new Date(b.dataEmprestimo || '').getTime() - new Date(a.dataEmprestimo || '').getTime())
         .slice(0, 5)
     : [];
+    
+  // Filtrar todos os empréstimos do leitor atual (incluindo histórico)
+  const emprestimosDoLeitor = Array.isArray(emprestimos) && user
+    ? emprestimos.filter(emp => {
+        // Verificar se o empréstimo pertence ao usuário atual
+        if (typeof emp.usuario === 'string') {
+          return emp.usuario === user._id;
+        } else if (emp.usuario && typeof emp.usuario === 'object') {
+          return emp.usuario._id === user._id;
+        }
+        return false;
+      })
+    : [];
+    
+  // Empréstimos recentes do leitor
+  const emprestimosRecentesDoLeitor = [...emprestimosDoLeitor]
+    .sort((a, b) => new Date(b.dataEmprestimo || '').getTime() - new Date(a.dataEmprestimo || '').getTime())
+    .slice(0, 5);
+    
+  // Devoluções próximas do leitor (ordenadas por data de devolução mais próxima)
+  const devolucoesPróximasDoLeitor = [...emprestimosDoLeitor]
+    .filter(emp => emp.status === 'pendente' || emp.status === 'renovado')
+    .sort((a, b) => new Date(a.dataPrevistaDevolucao || '').getTime() - new Date(b.dataPrevistaDevolucao || '').getTime())
+    .slice(0, 5);
+    
+  // Agrupar todos os empréstimos do leitor por livro
+  // Criar um mapa para acompanhar a quantidade de empréstimos por livro
+  const livrosEmprestadosMap = new Map();
+  
+  emprestimosDoLeitor.forEach(emprestimo => {
+    const livroId = typeof emprestimo.livro === 'string' ? emprestimo.livro : emprestimo.livro?._id;
+    const livroTitulo = typeof emprestimo.livro === 'string' ? 'Carregando...' : emprestimo.livro?.titulo;
+    const livroAutor = typeof emprestimo.livro === 'string' ? '' : emprestimo.livro?.autor;
+    
+    if (livroId && !livrosEmprestadosMap.has(livroId)) {
+      livrosEmprestadosMap.set(livroId, {
+        id: livroId,
+        titulo: livroTitulo,
+        autor: livroAutor,
+        emprestimos: [emprestimo],
+        quantidade: 1,
+        ultimoEmprestimo: emprestimo.dataEmprestimo
+      });
+    } else if (livroId) {
+      const livroInfo = livrosEmprestadosMap.get(livroId);
+      livroInfo.emprestimos.push(emprestimo);
+      livroInfo.quantidade += 1;
+      
+      // Atualizar data do último empréstimo se for mais recente
+      const dataAtual = new Date(livroInfo.ultimoEmprestimo || '');
+      const dataNova = new Date(emprestimo.dataEmprestimo || '');
+      if (dataNova > dataAtual) {
+        livroInfo.ultimoEmprestimo = emprestimo.dataEmprestimo;
+      }
+    }
+  });
+  
+  // Converter o mapa em array e ordenar por data do último empréstimo (mais recente primeiro)
+  const livrosEmprestados = Array.from(livrosEmprestadosMap.values())
+    .sort((a, b) => new Date(b.ultimoEmprestimo || '').getTime() - new Date(a.ultimoEmprestimo || '').getTime());
 
   // Ordenar livros mais recentes
   const livrosRecentes = Array.isArray(livros)
@@ -215,214 +338,413 @@ const DashboardPage: React.FC = () => {
   
   return (
     <DashboardContainer>
-      <PageTitle>Painel de Controle</PageTitle>
+      {/* <PageTitle>Painel de Controle</PageTitle> */}
       
       <StatsGrid>
-        <StatCard>
-          <StatContent>
-            <StatIcon $bgColor="var(--primary-color)">
-              <FiBook size={24} />
-            </StatIcon>
-            <StatInfo>
-              <StatValue>{stats.livrosTotal}</StatValue>
-              <StatLabel>Livros no Acervo</StatLabel>
-            </StatInfo>
-          </StatContent>
-        </StatCard>
-        
-        <StatCard>
-          <StatContent>
-            <StatIcon $bgColor="var(--success-color)">
-              <FiRepeat size={24} />
-            </StatIcon>
-            <StatInfo>
-              <StatValue>{stats.emprestimosAtivos}</StatValue>
-              <StatLabel>Empréstimos Ativos</StatLabel>
-            </StatInfo>
-          </StatContent>
-        </StatCard>
-        
-        <StatCard>
-          <StatContent>
-            <StatIcon $bgColor="var(--danger-color)">
-              <FiAlertTriangle size={24} />
-            </StatIcon>
-            <StatInfo>
-              <StatValue>{stats.emprestimosAtrasados}</StatValue>
-              <StatLabel>Devoluções Atrasadas</StatLabel>
-            </StatInfo>
-          </StatContent>
-        </StatCard>
-        
-        <StatCard>
-          <StatContent>
-            <StatIcon $bgColor="var(--info-color)">
-              <FiUsers size={24} />
-            </StatIcon>
-            <StatInfo>
-              <StatValue>{stats.usuariosAtivos}</StatValue>
-              <StatLabel>Usuários Ativos</StatLabel>
-            </StatInfo>
-          </StatContent>
-        </StatCard>
+        {user?.tipo === 'leitor' ? (
+          /* Mostrar estatísticas específicas para leitores */
+          <>
+            <StatCard>
+              <StatContent>
+                <StatIcon $bgColor="var(--primary-color)">
+                  <FiBook size={24} />
+                </StatIcon>
+                <StatInfo>
+                  <StatValue>{stats.readerBorrowedBooksCount}</StatValue>
+                  <StatLabel>Livros Emprestados</StatLabel>
+                </StatInfo>
+              </StatContent>
+            </StatCard>
+            
+            <StatCard>
+              <StatContent>
+                <StatIcon $bgColor="var(--success-color)">
+                  <FiRepeat size={24} />
+                </StatIcon>
+                <StatInfo>
+                  <StatValue>{stats.readerActiveLoansCount}</StatValue>
+                  <StatLabel>Empréstimos Ativos</StatLabel>
+                </StatInfo>
+              </StatContent>
+            </StatCard>
+            
+            <StatCard>
+              <StatContent>
+                <StatIcon $bgColor="var(--primary-color)">
+                  <FiBook size={24} />
+                </StatIcon>
+                <StatInfo>
+                  <StatValue>{stats.livrosTotal}</StatValue>
+                  <StatLabel>Livros no Acervo</StatLabel>
+                </StatInfo>
+              </StatContent>
+            </StatCard>
+          </>
+        ) : (
+          /* Mostrar estatísticas para administradores */
+          <>
+            <StatCard>
+              <StatContent>
+                <StatIcon $bgColor="var(--primary-color)">
+                  <FiBook size={24} />
+                </StatIcon>
+                <StatInfo>
+                  <StatValue>{stats.livrosTotal}</StatValue>
+                  <StatLabel>Livros no Acervo</StatLabel>
+                </StatInfo>
+              </StatContent>
+            </StatCard>
+            
+            <StatCard>
+              <StatContent>
+                <StatIcon $bgColor="var(--success-color)">
+                  <FiRepeat size={24} />
+                </StatIcon>
+                <StatInfo>
+                  <StatValue>{stats.emprestimosAtivos}</StatValue>
+                  <StatLabel>Empréstimos Ativos</StatLabel>
+                </StatInfo>
+              </StatContent>
+            </StatCard>
+            
+            <StatCard>
+              <StatContent>
+                <StatIcon $bgColor="var(--danger-color)">
+                  <FiAlertTriangle size={24} />
+                </StatIcon>
+                <StatInfo>
+                  <StatValue>{stats.emprestimosAtrasados}</StatValue>
+                  <StatLabel>Devoluções Atrasadas</StatLabel>
+                </StatInfo>
+              </StatContent>
+            </StatCard>
+            
+            <StatCard>
+              <StatContent>
+                <StatIcon $bgColor="var(--info-color)">
+                  <FiUsers size={24} />
+                </StatIcon>
+                <StatInfo>
+                  <StatValue>{stats.usuariosAtivos}</StatValue>
+                  <StatLabel>Usuários Ativos</StatLabel>
+                </StatInfo>
+              </StatContent>
+            </StatCard>
+          </>
+        )}
       </StatsGrid>
       
       <CardGrid>
-        <div>
-          <SectionTitle>Empréstimos Recentes</SectionTitle>
-          <RecentItemsCard>
-            {emprestimosLoading ? (
-              <NoItems>Carregando...</NoItems>
-            ) : emprestimosRecentes.length > 0 ? (
-              <ItemsList>
-                {emprestimosRecentes.map((emprestimo) => {
-                  const livroTitulo = typeof emprestimo.livro === 'string' 
-                    ? 'Carregando...'
-                    : emprestimo.livro?.titulo;
-                    
-                  const usuarioNome = typeof emprestimo.usuario === 'string'
-                    ? 'Carregando...'
-                    : emprestimo.usuario?.nome;
-                    
-                  return (
-                    <ItemListItem key={emprestimo._id}>
-                      <ItemTitle>{livroTitulo}</ItemTitle>
-                      <ItemMeta>
-                        <div>Usuário: {usuarioNome}</div>
-                        <ItemDate>
-                          Empréstimo: {formatDate(emprestimo.dataEmprestimo)}
-                        </ItemDate>
-                      </ItemMeta>
-                      <ItemMeta>
-                        <div>
-                          Devolução: {formatDate(emprestimo.dataPrevistaDevolucao)}
-                        </div>
-                        <StatusBadge $status={emprestimo.status || 'pendente'}>
-                          {emprestimo.status || 'pendente'}
-                        </StatusBadge>
-                      </ItemMeta>
-                    </ItemListItem>
-                  );
-                })}
-              </ItemsList>
-            ) : (
-              <NoItems>Nenhum empréstimo recente</NoItems>
-            )}
-            
-            <div style={{ padding: '15px', textAlign: 'center' }}>
-              <Button 
-                as={Link} 
-                to="/emprestimos" 
-                variant="outline"
-              >
-                Ver todos os empréstimos
-              </Button>
+        {user?.tipo === 'leitor' ? (
+          /* Mostrar seções específicas para leitores */
+          <>
+            <div>
+              <SectionTitle>Meus Empréstimos Recentes</SectionTitle>
+              <RecentItemsCard>
+                {/* Only show loading if the specific data we need is loading */}
+                {(user?.tipo === 'leitor' && emprestimosLoading) || (user?.tipo !== 'leitor' && (emprestimosLoading || usuariosLoading)) ? (
+                  <NoItems>Carregando...</NoItems>
+                ) : emprestimosRecentesDoLeitor.length > 0 ? (
+                  <ItemsList>
+                    {emprestimosRecentesDoLeitor.map((emprestimo) => {
+                      const livroTitulo = typeof emprestimo.livro === 'string' 
+                        ? 'Carregando...'
+                        : emprestimo.livro?.titulo;
+                        
+                      return (
+                        <ItemListItem key={emprestimo._id}>
+                          <ItemTitle>{livroTitulo}</ItemTitle>
+                          <ItemMeta>
+                            <div>
+                              <ItemDate>
+                                Emprestado em: {formatDate(emprestimo.dataEmprestimo)}
+                              </ItemDate>
+                            </div>
+                            <StatusBadge $status={emprestimo.status || 'pendente'}>
+                              {emprestimo.status || 'pendente'}
+                            </StatusBadge>
+                          </ItemMeta>
+                          <ItemMeta>
+                            <div>
+                              Devolver até: {formatDate(emprestimo.dataPrevistaDevolucao)}
+                            </div>
+                          </ItemMeta>
+                        </ItemListItem>
+                      );
+                    })}
+                  </ItemsList>
+                ) : (
+                  <NoItems>Você não tem empréstimos recentes</NoItems>
+                )}
+                
+                {/* Hide the button for users with type 'leitor' */}
+                {user?.tipo !== 'leitor' && (
+                  <div style={{ padding: '15px', textAlign: 'center' }}>
+                    <Button 
+                      as={Link} 
+                      to="/emprestimos" 
+                      variant="outline"
+                    >
+                      Ver todos meus empréstimos
+                    </Button>
+                  </div>
+                )}
+              </RecentItemsCard>
             </div>
-          </RecentItemsCard>
-        </div>
-        
-        <div>
-          <SectionTitle>Livros  Recentemente</SectionTitle>
-          <RecentItemsCard>
-            {livrosLoading ? (
-              <NoItems>Carregando...</NoItems>
-            ) : livrosRecentes.length > 0 ? (
-              <ItemsList>
-                {livrosRecentes.map((livro) => {
-                  const categoriaName = typeof livro.categoria === 'string'
-                    ? 'Carregando...'
-                    : livro.categoria?.nome;
-                    
-                  return (
-                    <ItemListItem key={livro._id}>
-                      <ItemTitle>{livro.titulo}</ItemTitle>
-                      <ItemMeta>
-                        <div>Autor: {livro.autor}</div>
-                        <div>Ano: {livro.anoPublicacao}</div>
-                      </ItemMeta>
-                      <ItemMeta>
-                        <div>
-                          Categoria: {categoriaName}
-                        </div>
-                        <div>
-                          Disponíveis: {livro.disponiveis}/{livro.quantidade}
-                        </div>
-                      </ItemMeta>
-                    </ItemListItem>
-                  );
-                })}
-              </ItemsList>
-            ) : (
-              <NoItems>Nenhum livro cadastrado recentemente</NoItems>
-            )}
             
-            <div style={{ padding: '15px', textAlign: 'center' }}>
-              <Button 
-                as={Link} 
-                to="/livros" 
-                variant="outline"
-              >
-                Ver todos os livros
-              </Button>
+            <div>
+              <SectionTitle>Próximas Devoluções</SectionTitle>
+              <RecentItemsCard>
+                {(user?.tipo === 'leitor' && emprestimosLoading) || (user?.tipo !== 'leitor' && (emprestimosLoading || usuariosLoading)) ? (
+                  <NoItems>Carregando...</NoItems>
+                ) : devolucoesPróximasDoLeitor.length > 0 ? (
+                  <ItemsList>
+                    {devolucoesPróximasDoLeitor.map((emprestimo) => {
+                      const livroTitulo = typeof emprestimo.livro === 'string' 
+                        ? 'Carregando...'
+                        : emprestimo.livro?.titulo;
+                        
+                      // Calcular dias restantes para devolução
+                      const dataAtual = new Date();
+                      const dataDevolucao = new Date(emprestimo.dataPrevistaDevolucao || '');
+                      const diffTempo = dataDevolucao.getTime() - dataAtual.getTime();
+                      const diffDias = Math.ceil(diffTempo / (1000 * 3600 * 24));
+                      
+                      const isUrgent = diffDias <= 3;
+                        
+                      return (
+                        <ItemListItem key={emprestimo._id}>
+                          <ItemTitle>{livroTitulo}</ItemTitle>
+                          <ItemMeta>
+                            <div>
+                              <StatusBadge $status={isUrgent ? 'atrasado' : 'pendente'}>
+                                {isUrgent ? `Urgente: ${diffDias} dias` : `${diffDias} dias restantes`}
+                              </StatusBadge>
+                            </div>
+                          </ItemMeta>
+                          <ItemMeta>
+                            <div>
+                              Devolver até: {formatDate(emprestimo.dataPrevistaDevolucao)}
+                            </div>
+                          </ItemMeta>
+                        </ItemListItem>
+                      );
+                    })}
+                  </ItemsList>
+                ) : (
+                  <NoItems>Você não tem devoluções programadas</NoItems>
+                )}
+                
+                {/* Hide the button for users with type 'leitor' */}
+                {user?.tipo !== 'leitor' && (
+                  <div style={{ padding: '15px', textAlign: 'center' }}>
+                    <Button 
+                      as={Link} 
+                      to="/emprestimos" 
+                      variant="outline"
+                    >
+                      Gerenciar devoluções
+                    </Button>
+                  </div>
+                )}
+              </RecentItemsCard>
             </div>
-          </RecentItemsCard>
-        </div>
-        
-        <div>
-          <SectionTitle>Empréstimos Atrasados</SectionTitle>
-          <RecentItemsCard>
-            {emprestimosLoading ? (
-              <NoItems>Carregando...</NoItems>
-            ) : emprestimosAtrasados.length > 0 ? (
-              <ItemsList>
-                {emprestimosAtrasados.map((emprestimo) => {
-                  const livroTitulo = typeof emprestimo.livro === 'string' 
-                    ? 'Carregando...'
-                    : emprestimo.livro?.titulo;
-                    
-                  const usuarioNome = typeof emprestimo.usuario === 'string'
-                    ? 'Carregando...'
-                    : emprestimo.usuario?.nome;
-                    
-                  return (
-                    <ItemListItem key={emprestimo._id}>
-                      <ItemTitle>{livroTitulo}</ItemTitle>
-                      <ItemMeta>
-                        <div>Usuário: {usuarioNome}</div>
-                        <div>
-                          <StatusBadge $status="atrasado">
-                            Atrasado
-                          </StatusBadge>
-                        </div>
-                      </ItemMeta>
-                      <ItemMeta>
-                        <div>
-                          Devolução: {formatDate(emprestimo.dataPrevistaDevolucao)}
-                        </div>
-                        <div>
-                          {emprestimo.multa ? `Multa: R$ ${emprestimo.multa.toFixed(2)}` : ''}
-                        </div>
-                      </ItemMeta>
-                    </ItemListItem>
-                  );
-                })}
-              </ItemsList>
-            ) : (
-              <NoItems>Não há empréstimos atrasados</NoItems>
-            )}
             
-            <div style={{ padding: '15px', textAlign: 'center' }}>
-              <Button 
-                as={Link} 
-                to="/emprestimos" 
-                variant="outline"
-                style={{ color: 'var(--danger-color)' }}
-              >
-                Gerenciar atrasos
-              </Button>
+            <div>
+              <SectionTitle>Histórico de Livros Emprestados</SectionTitle>
+              <RecentItemsCard>
+                {(user?.tipo === 'leitor' && emprestimosLoading) || (user?.tipo !== 'leitor' && (emprestimosLoading || usuariosLoading)) ? (
+                  <NoItems>Carregando...</NoItems>
+                ) : livrosEmprestados.length > 0 ? (
+                  <ItemsList>
+                    {livrosEmprestados.map((livro) => (
+                      <ItemListItem key={livro.id}>
+                        <ItemTitle>{livro.titulo}</ItemTitle>
+                        <ItemMeta>
+                          <div>Autor: {livro.autor || 'Não informado'}</div>
+                          <div>Vezes emprestado: {livro.quantidade}</div>
+                        </ItemMeta>
+                        <ItemMeta>
+                          <div>
+                            Último empréstimo: {formatDate(livro.ultimoEmprestimo)}
+                          </div>
+                          <div>
+                            {livro.emprestimos.some((e: any) => e.status === 'pendente' || e.status === 'renovado') ? (
+                              <StatusBadge $status={'pendente'}>Em andamento</StatusBadge>
+                            ) : (
+                              <StatusBadge $status={'devolvido'}>Devolvido</StatusBadge>
+                            )}
+                          </div>
+                        </ItemMeta>
+                      </ItemListItem>
+                    ))}
+                  </ItemsList>
+                ) : (
+                  <NoItems>Você ainda não pegou nenhum livro emprestado</NoItems>
+                )}
+              </RecentItemsCard>
             </div>
-          </RecentItemsCard>
-        </div>
+          </>
+        ) : (
+          /* Mostrar seções para administradores */
+          <>
+            <div>
+              <SectionTitle>Empréstimos Recentes</SectionTitle>
+              <RecentItemsCard>
+                {emprestimosLoading ? (
+                  <NoItems>Carregando...</NoItems>
+                ) : emprestimosRecentes.length > 0 ? (
+                  <ItemsList>
+                    {emprestimosRecentes.map((emprestimo) => {
+                      const livroTitulo = typeof emprestimo.livro === 'string' 
+                        ? 'Carregando...'
+                        : emprestimo.livro?.titulo;
+                        
+                      const usuarioNome = typeof emprestimo.usuario === 'string'
+                        ? 'Carregando...'
+                        : emprestimo.usuario?.nome;
+                        
+                      return (
+                        <ItemListItem key={emprestimo._id}>
+                          <ItemTitle>{livroTitulo}</ItemTitle>
+                          <ItemMeta>
+                            <div>Usuário: {usuarioNome}</div>
+                            <ItemDate>
+                              Empréstimo: {formatDate(emprestimo.dataEmprestimo)}
+                            </ItemDate>
+                          </ItemMeta>
+                          <ItemMeta>
+                            <div>
+                              Devolução: {formatDate(emprestimo.dataPrevistaDevolucao)}
+                            </div>
+                            <StatusBadge $status={emprestimo.status || 'pendente'}>
+                              {emprestimo.status || 'pendente'}
+                            </StatusBadge>
+                          </ItemMeta>
+                        </ItemListItem>
+                      );
+                    })}
+                  </ItemsList>
+                ) : (
+                  <NoItems>Nenhum empréstimo recente</NoItems>
+                )}
+                
+                <div style={{ padding: '15px', textAlign: 'center' }}>
+                  <Button 
+                    as={Link} 
+                    to="/emprestimos" 
+                    variant="outline"
+                  >
+                    Ver todos os empréstimos
+                  </Button>
+                </div>
+              </RecentItemsCard>
+            </div>
+            
+            <div>
+              <SectionTitle>Livros Recentemente</SectionTitle>
+              <RecentItemsCard>
+                {livrosLoading ? (
+                  <NoItems>Carregando...</NoItems>
+                ) : livrosRecentes.length > 0 ? (
+                  <ItemsList>
+                    {livrosRecentes.map((livro) => {
+                      const categoriaName = typeof livro.categoria === 'string'
+                        ? 'Carregando...'
+                        : livro.categoria?.nome;
+                        
+                      return (
+                        <ItemListItem key={livro._id}>
+                          <ItemTitle>{livro.titulo}</ItemTitle>
+                          <ItemMeta>
+                            <div>Autor: {livro.autor}</div>
+                            <div>Ano: {livro.anoPublicacao}</div>
+                          </ItemMeta>
+                          <ItemMeta>
+                            <div>
+                              Categoria: {categoriaName}
+                            </div>
+                            <div>
+                              Disponíveis: {livro.disponiveis}/{livro.quantidade}
+                            </div>
+                          </ItemMeta>
+                        </ItemListItem>
+                      );
+                    })}
+                  </ItemsList>
+                ) : (
+                  <NoItems>Nenhum livro cadastrado recentemente</NoItems>
+                )}
+                
+                <div style={{ padding: '15px', textAlign: 'center' }}>
+                  <Button 
+                    as={Link} 
+                    to="/livros" 
+                    variant="outline"
+                  >
+                    Ver todos os livros
+                  </Button>
+                </div>
+              </RecentItemsCard>
+            </div>
+            
+            <div>
+              <SectionTitle>Empréstimos Atrasados</SectionTitle>
+              <RecentItemsCard>
+                {emprestimosLoading ? (
+                  <NoItems>Carregando...</NoItems>
+                ) : emprestimosAtrasados.length > 0 ? (
+                  <ItemsList>
+                    {emprestimosAtrasados.map((emprestimo) => {
+                      const livroTitulo = typeof emprestimo.livro === 'string' 
+                        ? 'Carregando...'
+                        : emprestimo.livro?.titulo;
+                        
+                      const usuarioNome = typeof emprestimo.usuario === 'string'
+                        ? 'Carregando...'
+                        : emprestimo.usuario?.nome;
+                        
+                      return (
+                        <ItemListItem key={emprestimo._id}>
+                          <ItemTitle>{livroTitulo}</ItemTitle>
+                          <ItemMeta>
+                            <div>Usuário: {usuarioNome}</div>
+                            <div>
+                              <StatusBadge $status="atrasado">
+                                Atrasado
+                              </StatusBadge>
+                            </div>
+                          </ItemMeta>
+                          <ItemMeta>
+                            <div>
+                              Devolução: {formatDate(emprestimo.dataPrevistaDevolucao)}
+                            </div>
+                            <div>
+                              {emprestimo.multa ? `Multa: R$ ${emprestimo.multa.toFixed(2)}` : ''}
+                            </div>
+                          </ItemMeta>
+                        </ItemListItem>
+                      );
+                    })}
+                  </ItemsList>
+                ) : (
+                  <NoItems>Não há empréstimos atrasados</NoItems>
+                )}
+                
+                <div style={{ padding: '15px', textAlign: 'center' }}>
+                  <Button 
+                    as={Link} 
+                    to="/emprestimos" 
+                    variant="outline"
+                    style={{ color: 'var(--danger-color)' }}
+                  >
+                    Gerenciar atrasos
+                  </Button>
+                </div>
+              </RecentItemsCard>
+            </div>
+          </>
+        )}
       </CardGrid>
     </DashboardContainer>
   );

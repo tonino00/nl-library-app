@@ -130,14 +130,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   console.log('Current User:', user);
   console.log('User Type:', user?.tipo);
   
-  // Verificar se o usuário é admin, com segurança de tipo
+  // Verificar se o usuário é admin ou leitor, com segurança de tipo
   const userType = user?.tipo as string | undefined;
   const isAdmin = !!user && (
     userType === 'admin' || 
     (typeof userType === 'string' && userType.toLowerCase() === 'admin')
   );
   
+  const isLeitor = !!user && (
+    userType === 'leitor' || 
+    (typeof userType === 'string' && userType.toLowerCase() === 'leitor')
+  );
+  
   console.log('Is Admin:', isAdmin);
+  console.log('Is Leitor:', isLeitor);
   
   const handleLogout = () => {
     dispatch(logout());
@@ -147,12 +153,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   return (
     <SidebarContainer isOpen={isOpen}>
       <NavList>
-        <NavItem>
-          <StyledNavLink to="/" $isopen={isOpen.toString()}>
-            <FiHome size={20} />
-            <span>Dashboard</span>
-          </StyledNavLink>
-        </NavItem>
+       
+          <NavItem>
+            <StyledNavLink to="/" $isopen={isOpen.toString()}>
+              <FiHome size={20} />
+              <span>Dashboard</span>
+            </StyledNavLink>
+          </NavItem>
+    
 
         <SectionTitle $isopen={isOpen.toString()}>Catálogo</SectionTitle>
         
@@ -163,12 +171,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
           </StyledNavLink>
         </NavItem>
         
-        <NavItem>
-          <StyledNavLink to="/categorias" $isopen={isOpen.toString()}>
-            <FiFolder size={20} />
-            <span>Categorias</span>
-          </StyledNavLink>
-        </NavItem>
+        {isAdmin && (
+          <NavItem>
+            <StyledNavLink to="/categorias" $isopen={isOpen.toString()}>
+              <FiFolder size={20} />
+              <span>Categorias</span>
+            </StyledNavLink>
+          </NavItem>
+        )}
 
         {isAdmin && (
           <>
