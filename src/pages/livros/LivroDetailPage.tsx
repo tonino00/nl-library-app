@@ -245,7 +245,7 @@ const LivroDetailPage: React.FC = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <InfoItem>
                 <FiTag />
-                <InfoLabel>ISBN:</InfoLabel>
+                <InfoLabel>Número Classificado:</InfoLabel>
                 {livro.isbn}
               </InfoItem>
               

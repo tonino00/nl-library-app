@@ -159,7 +159,7 @@ const LivroFormPage: React.FC = () => {
         <Form onSubmit={handleSubmit(onSubmit)}>
           <FormRow>
             <Input
-              label="Título"
+              label="Título da obra"
               {...register('titulo', { required: 'O título é obrigatório' })}
               error={errors.titulo?.message}
               placeholder="Título do livro"
@@ -177,10 +177,10 @@ const LivroFormPage: React.FC = () => {
           
           <FormRow>
             <Input
-              label="ISBN"
+              label="Número Classificado"
               {...register('isbn', { required: 'O ISBN é obrigatório' })}
               error={errors.isbn?.message}
-              placeholder="ISBN do livro"
+              placeholder="Número Classificado"
               fullWidth
             />
             
@@ -217,7 +217,7 @@ const LivroFormPage: React.FC = () => {
             />
             
             <Input
-              label="Quantidade Total"
+              label="Quantidade "
               type="number"
               {...register('quantidade', { 
                 required: 'A quantidade é obrigatória',
@@ -248,7 +248,7 @@ const LivroFormPage: React.FC = () => {
           </FormRow>
           
           <Input
-            label="Localização na Biblioteca"
+            label="Novo Número de Classificação"
             {...register('localizacao')}
             error={errors.localizacao?.message}
             placeholder="Ex: Estante 3, Prateleira B"

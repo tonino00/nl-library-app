@@ -166,7 +166,7 @@ const LivrosListPage: React.FC = () => {
       ),
     },
     {
-      header: 'Título',
+      header: 'Título da obra',
       key: 'titulo',
     },
     {
