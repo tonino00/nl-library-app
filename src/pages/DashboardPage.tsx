@@ -351,7 +351,7 @@ const DashboardPage: React.FC = () => {
                 </StatIcon>
                 <StatInfo>
                   <StatValue>{stats.readerBorrowedBooksCount}</StatValue>
-                  <StatLabel>Livros Emprestados</StatLabel>
+                  <StatLabel>Livros Adquiridos Recentimente</StatLabel>
                 </StatInfo>
               </StatContent>
             </StatCard>
@@ -363,12 +363,12 @@ const DashboardPage: React.FC = () => {
                 </StatIcon>
                 <StatInfo>
                   <StatValue>{stats.readerActiveLoansCount}</StatValue>
-                  <StatLabel>Empréstimos Ativos</StatLabel>
+                  <StatLabel>Empréstimos Ronovados/Pendentes</StatLabel>
                 </StatInfo>
               </StatContent>
             </StatCard>
             
-            <StatCard>
+            {/* <StatCard>
               <StatContent>
                 <StatIcon $bgColor="var(--primary-color)">
                   <FiBook size={24} />
@@ -378,7 +378,7 @@ const DashboardPage: React.FC = () => {
                   <StatLabel>Livros no Acervo</StatLabel>
                 </StatInfo>
               </StatContent>
-            </StatCard>
+            </StatCard> */}
           </>
         ) : (
           /* Mostrar estatísticas para administradores */
@@ -532,7 +532,7 @@ const DashboardPage: React.FC = () => {
                     })}
                   </ItemsList>
                 ) : (
-                  <NoItems>Você não tem devoluções programadas</NoItems>
+                  <NoItems>Você não tem devoluções próximas a vencer</NoItems>
                 )}
                 
                 {/* Hide the button for users with type 'leitor' */}
@@ -551,7 +551,7 @@ const DashboardPage: React.FC = () => {
             </div>
             
             <div>
-              <SectionTitle>Histórico de Livros Emprestados</SectionTitle>
+              <SectionTitle>Livros Devolvidos</SectionTitle>
               <RecentItemsCard>
                 {(user?.tipo === 'leitor' && emprestimosLoading) || (user?.tipo !== 'leitor' && (emprestimosLoading || usuariosLoading)) ? (
                   <NoItems>Carregando...</NoItems>
@@ -642,7 +642,7 @@ const DashboardPage: React.FC = () => {
             </div>
             
             <div>
-              <SectionTitle>Livros Recentemente</SectionTitle>
+              <SectionTitle>Livros Recentementes</SectionTitle>
               <RecentItemsCard>
                 {livrosLoading ? (
                   <NoItems>Carregando...</NoItems>
