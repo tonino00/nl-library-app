@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Configuração base do axios
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
+  baseURL: process.env.REACT_APP_API_URL || 'https://nl-library-api.onrender.com',
   headers: {
     'Content-Type': 'application/json',
   },
