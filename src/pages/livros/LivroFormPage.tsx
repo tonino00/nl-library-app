@@ -98,6 +98,7 @@ const LivroFormPage: React.FC = () => {
       reset({
         titulo: livro.titulo,
         autor: livro.autor,
+        autorEspiritual: livro.autorEspiritual,
         isbn: livro.isbn,
         editora: livro.editora,
         anoPublicacao: livro.anoPublicacao,
@@ -165,12 +166,22 @@ const LivroFormPage: React.FC = () => {
               placeholder="Título do livro"
               fullWidth
             />
-            
+          </FormRow>
+
+          <FormRow>
             <Input
               label="Autor"
               {...register('autor', { required: 'O autor é obrigatório' })}
               error={errors.autor?.message}
               placeholder="Nome do autor"
+              fullWidth
+            />
+            
+            <Input
+              label="Autor Espiritual"
+              {...register('autorEspiritual')}
+              error={errors.autorEspiritual?.message}
+              placeholder="Nome do autor espiritual"
               fullWidth
             />
           </FormRow>
@@ -251,7 +262,7 @@ const LivroFormPage: React.FC = () => {
             label="Novo Número de Classificação"
             {...register('localizacao')}
             error={errors.localizacao?.message}
-            placeholder="Ex: Estante 3, Prateleira B"
+            placeholder="Ex: A1 , A2, A4"
             fullWidth
           />
           
