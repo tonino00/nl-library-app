@@ -136,7 +136,7 @@ const UsuarioDetailPage: React.FC = () => {
       render: (item) => formatDate(item.dataEmprestimo),
     },
     {
-      header: 'Data Prevista',
+      header: 'Data de Entrega',
       render: (item) => formatDate(item.dataPrevistaDevolucao),
     },
     {
