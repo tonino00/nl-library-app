@@ -10,11 +10,19 @@ import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 
+const PageWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--background-color);
+`;
+
 const LoginContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  flex: 1;
+  padding: 20px 0;
   background-color: var(--background-color);
 `;
 
@@ -70,6 +78,14 @@ const LoginLinks = styled.div`
   }
 `;
 
+const Copyright = styled.div`
+  text-align: center;
+  color: var(--light-text-color);
+  font-size: 0.8rem;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+`;
+
 const Icon = styled.div`
   font-size: 3rem;
   color: var(--primary-color);
@@ -104,7 +120,8 @@ const LoginPage: React.FC = () => {
   };
   
   return (
-    <LoginContainer>
+    <PageWrapper>
+      <LoginContainer>
       <LoginCard>
         <div style={{ padding: '2rem' }}>
           <Logo>
@@ -159,6 +176,12 @@ const LoginPage: React.FC = () => {
         </div>
       </LoginCard>
     </LoginContainer>
+    
+    <Copyright>
+      © Copyright toninosdev.com 2025.<br />
+      Todos os direitos reservados
+    </Copyright>
+    </PageWrapper>
   );
 };
 
