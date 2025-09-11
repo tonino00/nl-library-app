@@ -6,12 +6,8 @@ const ENDPOINT = '/api/livros';
 export const livroService = {
   getAll: async (): Promise<Livro[]> => {
     const response = await api.get(ENDPOINT);
-    // Debug da resposta da API
-    console.log('Resposta da API livros:', response.data);
-    
     // Verificar se a resposta está no formato { sucesso, data } ou apenas os dados diretos
     const livros = response.data.data || response.data;
-    console.log('Livros extraídos:', livros);
     
     return livros;
   },

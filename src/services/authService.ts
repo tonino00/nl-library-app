@@ -22,8 +22,6 @@ export const authService = {
       localStorage.setItem('token', response.data.token);
       // A API retorna o usuário em diferentes formatos, verificar todas as possíveis estruturas
       const userData = response.data.user || response.data.usuario || response.data.data;
-      console.log('Login Response Data:', response.data);
-      console.log('Extracted User Data:', userData);
       localStorage.setItem('user', JSON.stringify(userData));
     }
     

@@ -6,12 +6,8 @@ const ENDPOINT = '/api/emprestimos';
 export const emprestimoService = {
   getAll: async (): Promise<Emprestimo[]> => {
     const response = await api.get(ENDPOINT);
-    // Debug da resposta da API
-    console.log('Resposta da API emprestimos:', response.data);
-    
     // Verificar se a resposta está no formato { sucesso, data } ou apenas os dados diretos
     const emprestimos = response.data.data || response.data;
-    console.log('Emprestimos extraídos:', emprestimos);
     
     return emprestimos;
   },

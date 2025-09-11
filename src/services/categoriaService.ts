@@ -6,12 +6,8 @@ const ENDPOINT = '/api/categorias';
 export const categoriaService = {
   getAll: async (): Promise<Categoria[]> => {
     const response = await api.get(ENDPOINT);
-    // Debug da resposta da API
-    console.log('Resposta da API categorias:', response.data);
-    
     // Verificar se a resposta está no formato { sucesso, data } ou apenas os dados diretos
     const categorias = response.data.data || response.data;
-    console.log('Categorias extraídas:', categorias);
     
     return categorias;
   },

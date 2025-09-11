@@ -42,12 +42,6 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
   if (requiredRole && user) {
     const userRole = user.tipo;
     
-    console.log('PrivateRoute - Checking access:', {
-      requiredRole,
-      userRole,
-      user
-    });
-    
     // Define role hierarchy com verificação mais flexível
     let hasAccess = false;
     
@@ -61,8 +55,6 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
         (typeof userRole === 'string' && userRole.toLowerCase() === 'admin')
       );
     }
-    
-    console.log('PrivateRoute - Access granted:', hasAccess);
     
     if (!hasAccess) {
       return <Navigate to="/nao-autorizado" replace />;

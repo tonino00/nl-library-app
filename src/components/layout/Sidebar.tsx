@@ -126,10 +126,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
   
-  // Debug para verificar o usuário e suas permissões
-  console.log('Current User:', user);
-  console.log('User Type:', user?.tipo);
-  
   // Verificar se o usuário é admin ou leitor, com segurança de tipo
   const userType = user?.tipo as string | undefined;
   const isAdmin = !!user && (
@@ -141,9 +137,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     userType === 'leitor' || 
     (typeof userType === 'string' && userType.toLowerCase() === 'leitor')
   );
-  
-  console.log('Is Admin:', isAdmin);
-  console.log('Is Leitor:', isLeitor);
   
   const handleLogout = () => {
     dispatch(logout());

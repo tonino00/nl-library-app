@@ -6,12 +6,8 @@ const ENDPOINT = '/api/usuarios';
 export const usuarioService = {
   getAll: async (): Promise<Usuario[]> => {
     const response = await api.get(ENDPOINT);
-    // Debug da resposta da API
-    console.log('Resposta da API usuarios:', response.data);
-    
     // Verificar se a resposta está no formato { sucesso, data } ou apenas os dados diretos
     const usuarios = response.data.data || response.data;
-    console.log('Usuarios extraídos:', usuarios);
     
     return usuarios;
   },
@@ -38,8 +34,7 @@ export const usuarioService = {
   // Métodos específicos para usuários
   login: async (email: string, senha: string): Promise<{ token: string, usuario: Usuario }> => {
     const response = await api.post(`${ENDPOINT}/login`, { email, senha });
-    // Debug da resposta do login
-    console.log('Resposta do login:', response.data);
+    // Processar resposta do login
     return response.data;
   },
   
