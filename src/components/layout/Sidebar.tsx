@@ -19,11 +19,11 @@ interface SidebarProps {
   isOpen: boolean;
 }
 
-const SidebarContainer = styled.aside<{ isOpen: boolean }>`
+const SidebarContainer = styled.aside<{ $isOpen: boolean }>`
   position: fixed;
   top: 64px;
   left: 0;
-  width: ${({ isOpen }) => (isOpen ? '250px' : '70px')};
+  width: ${({ $isOpen }) => ($isOpen ? '250px' : '70px')};
   height: calc(100vh - 64px);
   background-color: white;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
@@ -151,7 +151,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   };
   
   return (
-    <SidebarContainer isOpen={isOpen}>
+    <SidebarContainer $isOpen={isOpen}>
       <NavList>
        
           <NavItem>

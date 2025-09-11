@@ -13,11 +13,11 @@ interface InputProps extends Omit<React.InputHTMLAttributes<InputElement>, 'as'>
   as?: 'input' | 'textarea';
 }
 
-const InputWrapper = styled.div<{ fullWidth?: boolean }>`
+const InputWrapper = styled.div<{ $fullWidth?: boolean }>`
   display: flex;
   flex-direction: column;
   margin-bottom: 16px;
-  width: ${({ fullWidth }) => (fullWidth ? '100%' : 'auto')};
+  width: ${({ $fullWidth }) => ($fullWidth ? '100%' : 'auto')};
 `;
 
 const Label = styled.label`
@@ -32,7 +32,7 @@ const InputContainer = styled.div`
   align-items: center;
 `;
 
-const StyledInput = styled.input<{ hasError?: boolean; hasLeftIcon?: boolean; hasRightIcon?: boolean }>`
+const StyledInput = styled.input<{ $hasError?: boolean; $hasLeftIcon?: boolean; $hasRightIcon?: boolean }>`
   width: 100%;
   padding: 10px 12px;
   border-radius: var(--border-radius);
@@ -52,7 +52,7 @@ const StyledInput = styled.input<{ hasError?: boolean; hasLeftIcon?: boolean; ha
     cursor: not-allowed;
   }
   
-  ${({ hasError }) => hasError && `
+  ${({ $hasError }) => $hasError && `
     border-color: var(--danger-color);
     
     &:focus {
@@ -60,16 +60,16 @@ const StyledInput = styled.input<{ hasError?: boolean; hasLeftIcon?: boolean; ha
     }
   `}
   
-  ${({ hasLeftIcon }) => hasLeftIcon && `
+  ${({ $hasLeftIcon }) => $hasLeftIcon && `
     padding-left: 40px;
   `}
   
-  ${({ hasRightIcon }) => hasRightIcon && `
+  ${({ $hasRightIcon }) => $hasRightIcon && `
     padding-right: 40px;
   `}
 `;
 
-const StyledTextarea = styled.textarea<{ hasError?: boolean; hasLeftIcon?: boolean; hasRightIcon?: boolean }>`
+const StyledTextarea = styled.textarea<{ $hasError?: boolean; $hasLeftIcon?: boolean; $hasRightIcon?: boolean }>`
   width: 100%;
   padding: 10px 12px;
   border-radius: var(--border-radius);
@@ -89,7 +89,7 @@ const StyledTextarea = styled.textarea<{ hasError?: boolean; hasLeftIcon?: boole
     cursor: not-allowed;
   }
   
-  ${({ hasError }) => hasError && `
+  ${({ $hasError }) => $hasError && `
     border-color: var(--danger-color);
     
     &:focus {
@@ -97,11 +97,11 @@ const StyledTextarea = styled.textarea<{ hasError?: boolean; hasLeftIcon?: boole
     }
   `}
   
-  ${({ hasLeftIcon }) => hasLeftIcon && `
+  ${({ $hasLeftIcon }) => $hasLeftIcon && `
     padding-left: 40px;
   `}
   
-  ${({ hasRightIcon }) => hasRightIcon && `
+  ${({ $hasRightIcon }) => $hasRightIcon && `
     padding-right: 40px;
   `}
   
@@ -109,20 +109,20 @@ const StyledTextarea = styled.textarea<{ hasError?: boolean; hasLeftIcon?: boole
   min-height: 100px;
 `;
 
-const IconWrapper = styled.div<{ position: 'left' | 'right' }>`
+const IconWrapper = styled.div<{ $position: 'left' | 'right' }>`
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  ${({ position }) => (position === 'left' ? 'left: 12px;' : 'right: 12px;')}
+  ${({ $position }) => ($position === 'left' ? 'left: 12px;' : 'right: 12px;')}
   display: flex;
   align-items: center;
   color: var(--light-text-color);
 `;
 
-const HelperText = styled.span<{ hasError?: boolean }>`
+const HelperText = styled.span<{ $hasError?: boolean }>`
   font-size: 12px;
   margin-top: 4px;
-  color: ${({ hasError }) => (hasError ? 'var(--danger-color)' : 'var(--light-text-color)')};
+  color: ${({ $hasError }) => ($hasError ? 'var(--danger-color)' : 'var(--light-text-color)')};
 `;
 
 const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputProps>(
@@ -136,33 +136,33 @@ const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputProps>(
     delete (inputProps as any).fullWidth;
     
     return (
-      <InputWrapper fullWidth={fullWidth}>
+      <InputWrapper $fullWidth={fullWidth}>
         {label && <Label>{label}</Label>}
         <InputContainer>
-          {leftIcon && <IconWrapper position="left">{leftIcon}</IconWrapper>}
+          {leftIcon && <IconWrapper $position="left">{leftIcon}</IconWrapper>}
           {
             as === 'textarea' ? (
               <StyledTextarea
-                hasError={hasError}
-                hasLeftIcon={hasLeftIcon}
-                hasRightIcon={hasRightIcon}
+                $hasError={hasError}
+                $hasLeftIcon={hasLeftIcon}
+                $hasRightIcon={hasRightIcon}
                 ref={ref as React.ForwardedRef<HTMLTextAreaElement>}
                 {...inputProps as React.TextareaHTMLAttributes<HTMLTextAreaElement>}
               />
             ) : (
               <StyledInput
-                hasError={hasError}
-                hasLeftIcon={hasLeftIcon}
-                hasRightIcon={hasRightIcon}
+                $hasError={hasError}
+                $hasLeftIcon={hasLeftIcon}
+                $hasRightIcon={hasRightIcon}
                 ref={ref as React.ForwardedRef<HTMLInputElement>}
                 {...inputProps as React.InputHTMLAttributes<HTMLInputElement>}
               />
             )
           }
-          {rightIcon && <IconWrapper position="right">{rightIcon}</IconWrapper>}
+          {rightIcon && <IconWrapper $position="right">{rightIcon}</IconWrapper>}
         </InputContainer>
         {(helperText || error) && (
-          <HelperText hasError={!!error}>{error || helperText}</HelperText>
+          <HelperText $hasError={!!error}>{error || helperText}</HelperText>
         )}
       </InputWrapper>
     );

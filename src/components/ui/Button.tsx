@@ -118,7 +118,11 @@ const getButtonSize = (size: ButtonSize) => {
   }
 };
 
-const StyledButton = styled.button<ButtonProps>`
+const StyledButton = styled.button<{
+  $variant?: ButtonVariant;
+  $size?: ButtonSize;
+  $fullWidth?: boolean;
+}>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -128,10 +132,10 @@ const StyledButton = styled.button<ButtonProps>`
   transition: var(--transition);
   cursor: pointer;
   
-  ${({ variant = 'primary' }) => getButtonStyles(variant)};
-  ${({ size = 'medium' }) => getButtonSize(size)};
+  ${({ $variant = 'primary' }) => getButtonStyles($variant)};
+  ${({ $size = 'medium' }) => getButtonSize($size)};
   
-  ${({ fullWidth }) => fullWidth && css`
+  ${({ $fullWidth }) => $fullWidth && css`
     width: 100%;
   `}
   
@@ -145,12 +149,27 @@ const StyledButton = styled.button<ButtonProps>`
   }
 `;
 
-const IconWrapper = styled.span<{ position: 'left' | 'right' }>`
+const IconWrapper = styled.span<{ $position: 'left' | 'right' }>`
   display: inline-flex;
   align-items: center;
-  margin-left: ${({ position }) => position === 'right' ? '8px' : '0'};
-  margin-right: ${({ position }) => position === 'left' ? '8px' : '0'};
+  margin-left: ${({ $position }) => $position === 'right' ? '8px' : '0'};
+  margin-right: ${({ $position }) => $position === 'left' ? '8px' : '0'};
 `;
+
+// Função auxiliar para filtrar props que não devem ser passadas para o DOM
+const filterDOMProps = (props: Record<string, any>) => {
+  const filteredProps = { ...props };
+  // Lista de props personalizadas que devem ser filtradas
+  const propsToFilter = ['fullWidth', 'variant', 'size', 'isLoading', 'leftIcon', 'rightIcon', 'to'];
+  
+  propsToFilter.forEach(prop => {
+    if (prop in filteredProps) {
+      delete filteredProps[prop];
+    }
+  });
+  
+  return filteredProps;
+};
 
 const Button: React.FC<ButtonProps> = ({ 
   children, 
@@ -161,25 +180,35 @@ const Button: React.FC<ButtonProps> = ({
   rightIcon,
   disabled,
   as,
+  fullWidth,
+  to,
   ...rest 
 }) => {
   const Component = as || 'button';
+  
+  // Filtrar as props personalizadas que não devem ser passadas para o DOM
+  const domProps = filterDOMProps(rest);
 
+  // Preparando props adicionais se o componente for um Link
+  const linkProps = to && Component === Link ? { to } : {};
+  
   return (
     <StyledButton
       as={Component}
-      variant={variant}
-      size={size}
+      $variant={variant}
+      $size={size}
+      $fullWidth={fullWidth}
       disabled={disabled || isLoading}
-      {...rest}
+      {...domProps}
+      {...linkProps}
     >
       {isLoading ? (
         'Carregando...'
       ) : (
         <>
-          {leftIcon && <IconWrapper position="left">{leftIcon}</IconWrapper>}
+          {leftIcon && <IconWrapper $position="left">{leftIcon}</IconWrapper>}
           {children}
-          {rightIcon && <IconWrapper position="right">{rightIcon}</IconWrapper>}
+          {rightIcon && <IconWrapper $position="right">{rightIcon}</IconWrapper>}
         </>
       )}
     </StyledButton>
