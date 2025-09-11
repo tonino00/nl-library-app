@@ -78,10 +78,14 @@ const CardGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
+  margin-bottom: 30px;
 `;
 
 const RecentItemsCard = styled(Card)`
   margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  height: auto;
 `;
 
 const ItemsList = styled.ul`
@@ -151,6 +155,13 @@ const NoItems = styled.div`
   color: var(--light-text-color);
 `;
 
+const ActionButtonContainer = styled.div`
+  padding: 15px;
+  text-align: center;
+  margin-top: auto;
+  border-top: 1px solid var(--border-color);
+`;
+
 const DashboardPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { livros, isLoading: livrosLoading } = useSelector((state: RootState) => state.livros);
@@ -171,18 +182,27 @@ const DashboardPage: React.FC = () => {
     readerActiveLoansCount: 0
   });
   
+  // Ref para controlar se já carregamos os dados
+  const dataFetchedRef = React.useRef(false);
+
   useEffect(() => {
-    // Always fetch books and categories for all users
-    dispatch(fetchLivros());
-    dispatch(fetchCategorias());
-    
-    if (user?.tipo === 'leitor' && user?._id) {
-      // For readers, only fetch their own emprestimos
-      dispatch(fetchEmprestimosByUsuario(user._id));
-    } else if (user?.tipo !== 'leitor') {
-      // For admins, fetch all users and emprestimos
-      dispatch(fetchUsuarios());
-      dispatch(fetchEmprestimos());
+    // Apenas busque os dados se eles ainda não foram carregados
+    if (!dataFetchedRef.current) {
+      // Always fetch books and categories for all users
+      dispatch(fetchLivros());
+      dispatch(fetchCategorias());
+      
+      if (user?.tipo === 'leitor' && user?._id) {
+        // For readers, only fetch their own emprestimos
+        dispatch(fetchEmprestimosByUsuario(user._id));
+      } else if (user?.tipo !== 'leitor') {
+        // For admins, fetch all users and emprestimos
+        dispatch(fetchUsuarios());
+        dispatch(fetchEmprestimos());
+      }
+      
+      // Marcar que os dados foram carregados
+      dataFetchedRef.current = true;
     }
   }, [dispatch, user?.tipo, user?._id]);
   
@@ -253,7 +273,7 @@ const DashboardPage: React.FC = () => {
   const emprestimosRecentes = Array.isArray(emprestimos) 
     ? [...emprestimos]
         .sort((a, b) => new Date(b.dataEmprestimo || '').getTime() - new Date(a.dataEmprestimo || '').getTime())
-        .slice(0, 5)
+        .slice(0, 3)
     : [];
     
   // Filtrar todos os empréstimos do leitor atual (incluindo histórico)
@@ -272,13 +292,13 @@ const DashboardPage: React.FC = () => {
   // Empréstimos recentes do leitor
   const emprestimosRecentesDoLeitor = [...emprestimosDoLeitor]
     .sort((a, b) => new Date(b.dataEmprestimo || '').getTime() - new Date(a.dataEmprestimo || '').getTime())
-    .slice(0, 5);
+    .slice(0, 3);
     
   // Devoluções próximas do leitor (ordenadas por data de devolução mais próxima)
   const devolucoesPróximasDoLeitor = [...emprestimosDoLeitor]
     .filter(emp => emp.status === 'pendente' || emp.status === 'renovado')
     .sort((a, b) => new Date(a.dataPrevistaDevolucao || '').getTime() - new Date(b.dataPrevistaDevolucao || '').getTime())
-    .slice(0, 5);
+    .slice(0, 3);
     
   // Agrupar todos os empréstimos do leitor por livro
   // Criar um mapa para acompanhar a quantidade de empréstimos por livro
@@ -320,14 +340,14 @@ const DashboardPage: React.FC = () => {
   const livrosRecentes = Array.isArray(livros)
     ? [...livros]
         .sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime())
-        .slice(0, 5)
+        .slice(0, 3)
     : [];
 
   // Encontrar empréstimos atrasados
   const emprestimosAtrasados = Array.isArray(emprestimos)
     ? [...emprestimos]
         .filter(e => e.status === 'atrasado')
-        .slice(0, 5)
+        .slice(0, 3)
     : [];
   
   const formatDate = (date?: Date) => {
@@ -479,15 +499,15 @@ const DashboardPage: React.FC = () => {
                 
                 {/* Hide the button for users with type 'leitor' */}
                 {user?.tipo !== 'leitor' && (
-                  <div style={{ padding: '15px', textAlign: 'center' }}>
-                    <Button 
-                      as={Link} 
-                      to="/emprestimos" 
-                      variant="outline"
-                    >
-                      Ver todos meus empréstimos
-                    </Button>
-                  </div>
+                  <ActionButtonContainer>
+                  <Button 
+                    as={Link} 
+                    to="/emprestimos" 
+                    variant="outline"
+                  >
+                    Ver todos meus empréstimos
+                  </Button>
+                </ActionButtonContainer>
                 )}
               </RecentItemsCard>
             </div>
@@ -537,15 +557,15 @@ const DashboardPage: React.FC = () => {
                 
                 {/* Hide the button for users with type 'leitor' */}
                 {user?.tipo !== 'leitor' && (
-                  <div style={{ padding: '15px', textAlign: 'center' }}>
-                    <Button 
-                      as={Link} 
-                      to="/emprestimos" 
-                      variant="outline"
-                    >
-                      Gerenciar devoluções
-                    </Button>
-                  </div>
+                  <ActionButtonContainer>
+                  <Button 
+                    as={Link} 
+                    to="/emprestimos" 
+                    variant="outline"
+                  >
+                    Gerenciar devoluções
+                  </Button>
+                </ActionButtonContainer>
                 )}
               </RecentItemsCard>
             </div>
@@ -629,7 +649,7 @@ const DashboardPage: React.FC = () => {
                   <NoItems>Nenhum empréstimo recente</NoItems>
                 )}
                 
-                <div style={{ padding: '15px', textAlign: 'center' }}>
+                <ActionButtonContainer>
                   <Button 
                     as={Link} 
                     to="/emprestimos" 
@@ -637,7 +657,7 @@ const DashboardPage: React.FC = () => {
                   >
                     Ver todos os empréstimos
                   </Button>
-                </div>
+                </ActionButtonContainer>
               </RecentItemsCard>
             </div>
             
@@ -676,7 +696,7 @@ const DashboardPage: React.FC = () => {
                   <NoItems>Nenhum livro cadastrado recentemente</NoItems>
                 )}
                 
-                <div style={{ padding: '15px', textAlign: 'center' }}>
+                <ActionButtonContainer>
                   <Button 
                     as={Link} 
                     to="/livros" 
@@ -684,7 +704,7 @@ const DashboardPage: React.FC = () => {
                   >
                     Ver todos os livros
                   </Button>
-                </div>
+                </ActionButtonContainer>
               </RecentItemsCard>
             </div>
             
@@ -731,7 +751,7 @@ const DashboardPage: React.FC = () => {
                   <NoItems>Não há empréstimos atrasados</NoItems>
                 )}
                 
-                <div style={{ padding: '15px', textAlign: 'center' }}>
+                <ActionButtonContainer>
                   <Button 
                     as={Link} 
                     to="/emprestimos" 
@@ -740,7 +760,7 @@ const DashboardPage: React.FC = () => {
                   >
                     Gerenciar atrasos
                   </Button>
-                </div>
+                </ActionButtonContainer>
               </RecentItemsCard>
             </div>
           </>

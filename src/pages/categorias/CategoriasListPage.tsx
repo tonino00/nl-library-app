@@ -44,12 +44,18 @@ const CategoriasListPage: React.FC = () => {
   // Verificar se o usuário é admin
   const canEdit = user?.tipo === 'admin';
   
+  // Ref para controlar se já carregamos os dados
+  const dataFetchedRef = React.useRef(false);
+
   useEffect(() => {
     // Verificar se precisamos forçar uma atualização dos dados
     const forceRefresh = location.state && (location.state as any).forceRefresh;
     
-    // Buscar categorias ao carregar o componente ou quando forceRefresh for true
-    dispatch(fetchCategorias());
+    // Buscar categorias apenas se ainda não buscamos ou se forceRefresh for true
+    if (forceRefresh || !dataFetchedRef.current) {
+      dispatch(fetchCategorias());
+      dataFetchedRef.current = true;
+    }
     
     // Limpar o state de navegação para evitar atualizações desnecessárias
     if (forceRefresh && window.history) {

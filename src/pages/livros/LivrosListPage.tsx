@@ -111,18 +111,58 @@ const LivrosListPage: React.FC = () => {
     } else if (searchTerm) {
       dispatch(pesquisarLivros(searchTerm));
     } else {
-      setFilteredLivros(livros);
+      dispatch(fetchLivros());
     }
   }, [selectedCategoria, dispatch, searchTerm]);
   
+  // Atualizar a lista filtrada quando os livros mudarem
   useEffect(() => {
-    setFilteredLivros(livros);
-  }, [livros]);
+    if (!Array.isArray(livros)) {
+      setFilteredLivros([]);
+      return;
+    }
+    
+    // Se não houver termo de busca, apenas usa a lista completa
+    if (!searchTerm) {
+      setFilteredLivros(livros);
+      return;
+    }
+    
+    // Se houver termo de busca mas a lista estiver vazia, faça uma pesquisa local
+    // Isso é útil quando a API não encontra resultados, mas pode haver correspondências 
+    // em campos que a API não está considerando, como autorEspiritual
+    if (searchTerm && livros.length === 0) {
+      // Buscar todos os livros para fazer pesquisa local
+      dispatch(fetchLivros()).then((action) => {
+        if (fetchLivros.fulfilled.match(action)) {
+          const todosLivros = action.payload as Livro[];
+          const termoBusca = searchTerm.toLowerCase();
+          
+          // Filtrar localmente por autor espiritual e outros campos
+          const resultadosLocais = todosLivros.filter(livro => 
+            (livro.autorEspiritual && livro.autorEspiritual.toLowerCase().includes(termoBusca)) ||
+            livro.titulo.toLowerCase().includes(termoBusca) ||
+            livro.autor.toLowerCase().includes(termoBusca)
+          );
+          
+          setFilteredLivros(resultadosLocais);
+        }
+      });
+    } else {
+      setFilteredLivros(livros);
+    }
+  }, [livros, searchTerm, dispatch]);
   
   const handleSearch = (term: string) => {
+    // Resetar a categoria quando fizer uma nova busca
+    setSelectedCategoria('');
     setSearchTerm(term);
+    
     if (term) {
+      // Primeiro tenta a pesquisa pela API
       dispatch(pesquisarLivros(term));
+      
+      // A lógica de fallback para pesquisa local está no useEffect que monitora livros e searchTerm
     } else {
       dispatch(fetchLivros());
     }
@@ -131,6 +171,7 @@ const LivrosListPage: React.FC = () => {
   const handleCategoriaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedCategoria(e.target.value);
   };
+
   
   const handleDelete = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este livro?')) {
@@ -168,14 +209,22 @@ const LivrosListPage: React.FC = () => {
     {
       header: 'Título da obra',
       key: 'titulo',
+      width: '250px',
     },
     {
       header: 'Autor',
       key: 'autor',
+      width: '180px',
+    },
+    {
+      header: 'Autor Espiritual',
+      render: (item) => item.autorEspiritual || '-',
+      width: '220px',
     },
     {
       header: 'Categoria',
       render: (item) => formatCategoriaName(item.categoria),
+      width: '140px',
     },
     {
       header: 'Disponibilidade',
@@ -249,7 +298,7 @@ const LivrosListPage: React.FC = () => {
           <div style={{ flexGrow: 1 }}>
             <SearchBar
               onSearch={handleSearch}
-              placeholder="Pesquisar por título, autor ou ISBN..."
+              placeholder="Pesquisar por título, autor ou autor espiritual..."
             />
           </div>
           <FilterContainer>
