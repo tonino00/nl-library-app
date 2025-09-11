@@ -46,15 +46,15 @@ const FilterContainer = styled.div`
   min-width: 200px;
 `;
 
-const StatusBadge = styled.span<{ status: string }>`
+const StatusBadge = styled.span<{ $status: string }>`
   display: inline-block;
   padding: 4px 8px;
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 500;
   
-  ${({ status }) => {
-    switch (status) {
+  ${({ $status }) => {
+    switch ($status) {
       case 'pendente':
         return `
           background-color: rgba(255, 193, 7, 0.2);
@@ -207,7 +207,7 @@ const EmprestimosListPage: React.FC = () => {
     {
       header: 'Status',
       render: (item) => (
-        <StatusBadge status={item.status || 'pendente'}>
+        <StatusBadge $status={item.status || 'pendente'}>
           {item.status || 'pendente'}
         </StatusBadge>
       ),

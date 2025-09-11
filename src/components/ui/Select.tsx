@@ -14,11 +14,11 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   fullWidth?: boolean;
 }
 
-const SelectWrapper = styled.div<{ fullWidth?: boolean }>`
+const SelectWrapper = styled.div<{ $fullWidth?: boolean }>`
   display: flex;
   flex-direction: column;
   margin-bottom: 16px;
-  width: ${({ fullWidth }) => (fullWidth ? '100%' : 'auto')};
+  width: ${({ $fullWidth }) => ($fullWidth ? '100%' : 'auto')};
 `;
 
 const Label = styled.label`
@@ -27,7 +27,7 @@ const Label = styled.label`
   margin-bottom: 6px;
 `;
 
-const StyledSelect = styled.select<{ hasError?: boolean }>`
+const StyledSelect = styled.select<{ $hasError?: boolean }>`
   width: 100%;
   padding: 10px 12px;
   border-radius: var(--border-radius);
@@ -51,7 +51,7 @@ const StyledSelect = styled.select<{ hasError?: boolean }>`
     cursor: not-allowed;
   }
   
-  ${({ hasError }) => hasError && css`
+  ${({ $hasError }) => $hasError && css`
     border-color: var(--danger-color);
     
     &:focus {
@@ -60,19 +60,19 @@ const StyledSelect = styled.select<{ hasError?: boolean }>`
   `}
 `;
 
-const HelperText = styled.span<{ hasError?: boolean }>`
+const HelperText = styled.span<{ $hasError?: boolean }>`
   font-size: 12px;
   margin-top: 4px;
-  color: ${({ hasError }) => (hasError ? 'var(--danger-color)' : 'var(--light-text-color)')};
+  color: ${({ $hasError }) => ($hasError ? 'var(--danger-color)' : 'var(--light-text-color)')};
 `;
 
 const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ options, label, helperText, error, fullWidth, ...rest }, ref) => {
     return (
-      <SelectWrapper fullWidth={fullWidth}>
+      <SelectWrapper $fullWidth={fullWidth}>
         {label && <Label>{label}</Label>}
         <StyledSelect
-          hasError={!!error}
+          $hasError={!!error}
           ref={ref}
           {...rest}
         >
@@ -86,7 +86,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ))}
         </StyledSelect>
         {(helperText || error) && (
-          <HelperText hasError={!!error}>{error || helperText}</HelperText>
+          <HelperText $hasError={!!error}>{error || helperText}</HelperText>
         )}
       </SelectWrapper>
     );

@@ -33,12 +33,12 @@ const SearchContainer = styled.div`
   margin-bottom: 20px;
 `;
 
-const Avatar = styled.div<{ url?: string }>`
+const Avatar = styled.div<{ $url?: string }>`
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: ${({ url }) => (url ? 'transparent' : 'var(--primary-color)')};
-  background-image: ${({ url }) => (url ? `url(${url})` : 'none')};
+  background-color: ${({ $url }) => ($url ? 'transparent' : 'var(--primary-color)')};
+  background-image: ${({ $url }) => ($url ? `url(${$url})` : 'none')};
   background-size: cover;
   background-position: center;
   color: white;
@@ -48,14 +48,14 @@ const Avatar = styled.div<{ url?: string }>`
   font-weight: 600;
 `;
 
-const StatusBadge = styled.span<{ ativo: boolean }>`
+const StatusBadge = styled.span<{ $ativo: boolean }>`
   display: inline-block;
   padding: 4px 8px;
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 500;
-  background-color: ${({ ativo }) => ativo ? 'rgba(40, 167, 69, 0.2)' : 'rgba(220, 53, 69, 0.2)'};
-  color: ${({ ativo }) => ativo ? '#155724' : '#721c24'};
+  background-color: ${({ $ativo }) => $ativo ? 'rgba(40, 167, 69, 0.2)' : 'rgba(220, 53, 69, 0.2)'};
+  color: ${({ $ativo }) => $ativo ? '#155724' : '#721c24'};
 `;
 
 const UsuariosListPage: React.FC = () => {
@@ -133,7 +133,7 @@ const UsuariosListPage: React.FC = () => {
       header: '',
       width: '50px',
       render: (item) => (
-        <Avatar url={item.foto}>
+        <Avatar $url={item.foto}>
           {!item.foto && item.nome.charAt(0).toUpperCase()}
         </Avatar>
       ),
@@ -161,7 +161,7 @@ const UsuariosListPage: React.FC = () => {
     {
       header: 'Status',
       render: (item) => (
-        <StatusBadge ativo={item.ativo !== false}>
+        <StatusBadge $ativo={item.ativo !== false}>
           {item.ativo !== false ? 'Ativo' : 'Inativo'}
         </StatusBadge>
       ),

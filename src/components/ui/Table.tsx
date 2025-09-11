@@ -30,13 +30,13 @@ const TableWrapper = styled.div`
   margin-bottom: 1rem;
 `;
 
-const StyledTable = styled.table<{ compact?: boolean; striped?: boolean; hoverable?: boolean }>`
+const StyledTable = styled.table<{ $compact?: boolean; $striped?: boolean; $hoverable?: boolean }>`
   width: 100%;
   border-collapse: collapse;
-  font-size: ${({ compact }) => (compact ? '0.875rem' : '1rem')};
+  font-size: ${({ $compact }) => ($compact ? '0.875rem' : '1rem')};
 
   th, td {
-    padding: ${({ compact }) => (compact ? '8px 12px' : '12px 16px')};
+    padding: ${({ $compact }) => ($compact ? '8px 12px' : '12px 16px')};
     border-bottom: 1px solid var(--border-color);
     text-align: left;
   }
@@ -47,13 +47,13 @@ const StyledTable = styled.table<{ compact?: boolean; striped?: boolean; hoverab
     color: var(--text-color);
   }
 
-  ${({ striped }) => striped && css`
+  ${({ $striped }) => $striped && css`
     tbody tr:nth-child(even) {
       background-color: rgba(0, 0, 0, 0.02);
     }
   `}
 
-  ${({ hoverable }) => hoverable && css`
+  ${({ $hoverable }) => $hoverable && css`
     tbody tr:hover {
       background-color: rgba(46, 90, 136, 0.05);
     }
@@ -64,13 +64,13 @@ const StyledTable = styled.table<{ compact?: boolean; striped?: boolean; hoverab
   }
 `;
 
-const Cell = styled.td<{ align?: 'left' | 'center' | 'right' }>`
-  text-align: ${({ align }) => align || 'left'};
+const Cell = styled.td<{ $align?: 'left' | 'center' | 'right' }>`
+  text-align: ${({ $align }) => $align || 'left'};
 `;
 
-const HeaderCell = styled.th<{ align?: 'left' | 'center' | 'right'; width?: string }>`
-  text-align: ${({ align }) => align || 'left'};
-  width: ${({ width }) => width || 'auto'};
+const HeaderCell = styled.th<{ $align?: 'left' | 'center' | 'right'; $width?: string }>`
+  text-align: ${({ $align }) => $align || 'left'};
+  width: ${({ $width }) => $width || 'auto'};
 `;
 
 const EmptyState = styled.div`
@@ -114,7 +114,7 @@ function Table<T>({
             : '';
 
           return (
-            <Cell key={`cell-${colIndex}`} align={column.align}>
+            <Cell key={`cell-${colIndex}`} $align={column.align}>
               {content}
             </Cell>
           );
@@ -126,17 +126,17 @@ function Table<T>({
   return (
     <TableWrapper className={className}>
       <StyledTable
-        striped={striped}
-        hoverable={hoverable}
-        compact={compact}
+        $striped={striped}
+        $hoverable={hoverable}
+        $compact={compact}
       >
         <thead>
           <tr>
             {columns.map((column, index) => (
               <HeaderCell
                 key={`header-${index}`}
-                align={column.align}
-                width={column.width}
+                $align={column.align}
+                $width={column.width}
               >
                 {column.header}
               </HeaderCell>

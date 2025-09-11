@@ -67,14 +67,14 @@ const DefaultCover = styled.div`
   font-size: 20px;
 `;
 
-const AvailabilityStatus = styled.span<{ available: boolean }>`
+const AvailabilityStatus = styled.span<{ $available: boolean }>`
   display: inline-block;
   padding: 4px 8px;
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 500;
-  background-color: ${({ available }) => available ? 'rgba(40, 167, 69, 0.2)' : 'rgba(220, 53, 69, 0.2)'};
-  color: ${({ available }) => available ? '#155724' : '#721c24'};
+  background-color: ${({ $available }) => $available ? 'rgba(40, 167, 69, 0.2)' : 'rgba(220, 53, 69, 0.2)'};
+  color: ${({ $available }) => $available ? '#155724' : '#721c24'};
 `;
 
 const LivrosListPage: React.FC = () => {
@@ -181,7 +181,7 @@ const LivrosListPage: React.FC = () => {
       header: 'Disponibilidade',
       render: (item) => (
         <div>
-          <AvailabilityStatus available={(item.disponiveis || 0) > 0}>
+          <AvailabilityStatus $available={(item.disponiveis || 0) > 0}>
             {item.disponiveis || 0}/{item.quantidade || 0}
           </AvailabilityStatus>
         </div>
