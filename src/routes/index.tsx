@@ -2,6 +2,8 @@ import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import PrivateRoute from '../components/auth/PrivateRoute';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+import styled from 'styled-components';
 
 // Importar páginas que não têm implementação real ainda
 import {
@@ -19,11 +21,26 @@ const EmprestimoFormPage = lazy(() => import('../pages/emprestimos/EmprestimoFor
 const EmprestimoDetailPage = lazy(() => import('../pages/emprestimos/EmprestimoDetailPage'));
 const ConfiguracoesPage = lazy(() => import('../pages/ConfiguracoesPage'));
 
-// Componente de carregamento
+// Container estilizado para centralizar o spinner de carregamento
+const LoadingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100%;
+  background-color: var(--background-color);
+`;
+
+// Componente de carregamento com spinner animado
 const LoadingFallback = () => (
-  <div className="flex-center" style={{ height: '100vh' }}>
-    <p>Carregando...</p>
-  </div>
+  <LoadingContainer>
+    <LoadingSpinner
+      size="large"
+      showLogo={true}
+      message="Carregando a biblioteca..."
+    />
+  </LoadingContainer>
 );
 
 // Lazy loading das páginas já implementadas

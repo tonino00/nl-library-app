@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
+import LoadingSpinner from '../ui/LoadingSpinner';
+import styled from 'styled-components';
 
 type UserRole = 'admin' | 'leitor';
 
@@ -23,12 +25,25 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
   // Direct check for token without relying on hooks
   const hasToken = localStorage.getItem('token') !== null;
 
+const LoadingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: var(--background-color);
+`;
+
   // Show loading only when auth is truly in progress
   if (isLoading) {
     return (
-      <div className="flex-center" style={{ height: '100vh' }}>
-        <p>Carregando...</p>
-      </div>
+      <LoadingContainer>
+        <LoadingSpinner 
+          size="large" 
+          showLogo={true}
+          message="Carregando a biblioteca..."
+        />
+      </LoadingContainer>
     );
   }
 
