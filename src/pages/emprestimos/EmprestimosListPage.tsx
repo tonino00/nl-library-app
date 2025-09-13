@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import { FiPlus, FiEye, FiCheck, FiRepeat, FiFilter } from 'react-icons/fi';
-import { fetchEmprestimos, finalizarEmprestimo, renovarEmprestimo } from '../../features/emprestimos/emprestimoSlice';
+import { FiPlus, FiEye, FiCheck, FiRepeat, FiFilter, FiTrash2, FiEdit } from 'react-icons/fi';
+import { fetchEmprestimos, finalizarEmprestimo, renovarEmprestimo, deleteEmprestimo } from '../../features/emprestimos/emprestimoSlice';
 import { AppDispatch, RootState } from '../../store';
 import Button from '../../components/ui/Button';
 import Table, { Column } from '../../components/ui/Table';
@@ -173,6 +173,17 @@ const EmprestimosListPage: React.FC = () => {
       }
     }
   };
+
+  const handleRemove = async (id: string) => {
+    if (window.confirm('Deseja realmente excluir este empréstimo? Esta ação não pode ser desfeita.')) {
+      try {
+        await dispatch(deleteEmprestimo(id)).unwrap();
+        toast.success('Empréstimo excluído com sucesso!');
+      } catch (error: any) {
+        toast.error(error || 'Erro ao excluir empréstimo');
+      }
+    }
+  };
   
   const formatDate = (date?: Date) => {
     if (!date) return '-';
@@ -255,10 +266,29 @@ const EmprestimosListPage: React.FC = () => {
               ) : null}
             </>
           )}
+          
+          <Button
+            as={Link}
+            to={`/emprestimos/editar/${item._id}`}
+            variant="secondary"
+            size="small"
+            leftIcon={<FiEdit size={16} />}
+          >
+            Editar
+          </Button>
+          
+          <Button
+            variant="danger"
+            size="small"
+            leftIcon={<FiTrash2 size={16} />}
+            onClick={() => item._id && handleRemove(item._id)}
+          >
+            Excluir
+          </Button>
         </ActionButtons>
       ),
       align: 'right',
-      width: '280px',
+      width: '360px',
     },
   ];
   

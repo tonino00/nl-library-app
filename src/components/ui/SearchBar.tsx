@@ -30,11 +30,11 @@ const SearchInput = styled.input`
   }
 `;
 
-const IconWrapper = styled.div<{ position: 'left' | 'right' }>`
+const IconWrapper = styled.div<{ $position: 'left' | 'right' }>`
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  ${({ position }) => position === 'left' ? 'left: 12px;' : 'right: 12px;'}
+  ${({ $position }) => $position === 'left' ? 'left: 12px;' : 'right: 12px;'}
   display: flex;
   align-items: center;
   color: var(--light-text-color);
@@ -80,7 +80,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
   return (
     <SearchContainer className={className}>
-      <IconWrapper position="left">
+      <IconWrapper $position="left">
         <FiSearch size={18} />
       </IconWrapper>
       <SearchInput
@@ -92,7 +92,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         aria-label="Campo de pesquisa"
       />
       {searchTerm && (
-        <IconWrapper position="right">
+        <IconWrapper $position="right">
           <ClearButton
             type="button"
             onClick={handleClear}

@@ -91,13 +91,13 @@ const InfoLabel = styled.span`
   margin-right: 8px;
 `;
 
-const StatusBadge = styled.span<{ ativo: boolean }>`
+const StatusBadge = styled.span<{ ativo: string }>`
   display: inline-block;
   padding: 6px 12px;
   border-radius: 16px;
   font-weight: 500;
-  background-color: ${({ ativo }) => ativo ? 'rgba(40, 167, 69, 0.2)' : 'rgba(220, 53, 69, 0.2)'};
-  color: ${({ ativo }) => ativo ? '#155724' : '#721c24'};
+  background-color: ${({ ativo }) => ativo === 'true' ? 'rgba(40, 167, 69, 0.2)' : 'rgba(220, 53, 69, 0.2)'};
+  color: ${({ ativo }) => ativo === 'true' ? '#155724' : '#721c24'};
   margin-bottom: 20px;
 `;
 
@@ -214,7 +214,7 @@ const UsuarioDetailPage: React.FC = () => {
               {usuario.tipo || 'Leitor'}
             </UserType>
             
-            <StatusBadge ativo={usuario.ativo !== false}>
+            <StatusBadge ativo={String(usuario.ativo !== false)}>
               {usuario.ativo !== false ? 'Usuário Ativo' : 'Usuário Inativo'}
             </StatusBadge>
             
