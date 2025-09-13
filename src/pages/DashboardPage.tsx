@@ -95,7 +95,7 @@ const ItemsList = styled.ul`
 `;
 
 const ItemListItem = styled.li`
-  padding: 12px 0;
+  padding: 16px 12px;
   border-bottom: 1px solid var(--border-color);
   
   &:last-child {
@@ -104,8 +104,13 @@ const ItemListItem = styled.li`
 `;
 
 const ItemTitle = styled.h3`
-  font-size: 1rem;
-  margin: 0 0 5px 0;
+  font-size: 1.1rem;
+  margin: 0 0 8px 0;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 `;
 
 const ItemMeta = styled.div`
@@ -113,6 +118,15 @@ const ItemMeta = styled.div`
   justify-content: space-between;
   font-size: 0.875rem;
   color: var(--light-text-color);
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+  gap: 6px;
+  
+  & > div {
+    min-width: 40%;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
 `;
 
 const ItemDate = styled.span``;
@@ -581,7 +595,7 @@ const DashboardPage: React.FC = () => {
                       <ItemListItem key={livro.id}>
                         <ItemTitle>{livro.titulo}</ItemTitle>
                         <ItemMeta>
-                          <div>Autor: {livro.autor || 'Não informado'}</div>
+                          <div style={{ flexBasis: '100%' }}>Autor Espiritual: {livro.autor || 'Não informado'}</div>
                           <div>Vezes emprestado: {livro.quantidade}</div>
                         </ItemMeta>
                         <ItemMeta>
@@ -677,7 +691,7 @@ const DashboardPage: React.FC = () => {
                         <ItemListItem key={livro._id}>
                           <ItemTitle>{livro.titulo}</ItemTitle>
                           <ItemMeta>
-                            <div>Autor: {livro.autor}</div>
+                            <div style={{ flexBasis: '100%' }}>Autor Espiritual: {livro.autor}</div>
                             <div>Ano: {livro.anoPublicacao}</div>
                           </ItemMeta>
                           <ItemMeta>
