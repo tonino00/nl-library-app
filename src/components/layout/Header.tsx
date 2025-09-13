@@ -1,10 +1,10 @@
-import React from 'react';
-import styled from 'styled-components';
-import { Link } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../../features/auth/authSlice';
-import { RootState, AppDispatch } from '../../store';
-import { FiMenu, FiX, FiLogOut, FiUser } from '../../utils/iconFix';
+import React from "react";
+import styled from "styled-components";
+import { Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { logout } from "../../features/auth/authSlice";
+import { RootState, AppDispatch } from "../../store";
+import { FiMenu, FiX, FiLogOut, FiUser } from "../../utils/iconFix";
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -94,16 +94,37 @@ const LogoutButton = styled.button`
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:hover {
     background-color: #dc3545;
     color: white;
   }
-  
+
   span {
     display: inline-block;
   }
 `;
+
+const AvatarPlaceholder = styled.div`
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 3rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+`;
+
+const ImagePreviewContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+
+
 
 // Usamos React.FC<HeaderProps> para tipar corretamente os props
 const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
@@ -119,19 +140,29 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
       <IconButton onClick={toggleSidebar} aria-label="Menu">
         {isSidebarOpen ? <FiX size={24} /> : <FiMenu size={24} />}
       </IconButton>
-      
+
       <Logo to="/">
         <span>Biblioteca NL</span>
       </Logo>
-      
+
       {user && (
         <UserInfo>
-          <UserName>{user.nome || 'Usuário'}</UserName>
+          <UserName>{user.nome || "Usuário"}</UserName>
           {user.foto ? (
-            <img src={user.foto} alt={user.nome} width="36" height="36" style={{ borderRadius: '50%' }} />
+            // <img src={user.foto} alt={user.nome} width="36" height="36" style={{ borderRadius: '50%' }} />
+            <ImagePreviewContainer>
+              <AvatarPlaceholder>
+                <span style={{marginBottom: '12px'}}>
+                   <FiUser size={16}/>
+                </span>
+               
+              </AvatarPlaceholder>
+            </ImagePreviewContainer>
           ) : (
             <Avatar>
-              {user.nome && user.nome.charAt(0) ? user.nome.charAt(0).toUpperCase() : '?'}
+              {user.nome && user.nome.charAt(0)
+                ? user.nome.charAt(0).toUpperCase()
+                : "?"}
             </Avatar>
           )}
           {/* <LogoutButton onClick={handleLogout}>
