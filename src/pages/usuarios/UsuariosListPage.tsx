@@ -9,6 +9,7 @@ import Button from '../../components/ui/Button';
 import Table, { Column } from '../../components/ui/Table';
 import SearchBar from '../../components/ui/SearchBar';
 import Card from '../../components/ui/Card';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { Usuario } from '../../types';
 import { toast } from 'react-toastify';
 
@@ -65,6 +66,8 @@ const UsuariosListPage: React.FC = () => {
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredUsuarios, setFilteredUsuarios] = useState<Usuario[]>([]);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [usuarioToDelete, setUsuarioToDelete] = useState<string>('');
   
   // Verificar se o usuário é admin
   const isAdmin = user?.tipo === 'admin';
@@ -108,14 +111,17 @@ const UsuariosListPage: React.FC = () => {
     setSearchTerm(term);
   };
   
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este usuário?')) {
-      try {
-        await dispatch(deleteUsuario(id)).unwrap();
-        toast.success('Usuário excluído com sucesso!');
-      } catch (error: any) {
-        toast.error(error || 'Erro ao excluir usuário');
-      }
+  const handleDeleteClick = (id: string) => {
+    setUsuarioToDelete(id);
+    setConfirmDeleteOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await dispatch(deleteUsuario(usuarioToDelete)).unwrap();
+      toast.success('Usuário excluído com sucesso!');
+    } catch (error: any) {
+      toast.error(error || 'Erro ao excluir usuário');
     }
   };
   
@@ -207,7 +213,7 @@ const UsuariosListPage: React.FC = () => {
               variant="danger"
               size="small"
               leftIcon={<FiTrash2 size={16} />}
-              onClick={() => item._id && handleDelete(item._id)}
+              onClick={() => item._id && handleDeleteClick(item._id)}
             >
               Excluir
             </Button>
@@ -251,6 +257,17 @@ const UsuariosListPage: React.FC = () => {
           striped
         />
       </Card>
+
+      <ConfirmDialog
+        isOpen={confirmDeleteOpen}
+        onClose={() => setConfirmDeleteOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Confirmação"
+        message="Tem certeza que deseja excluir este usuário?"
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        variant="danger"
+      />
     </div>
   );
 };

@@ -16,6 +16,7 @@ import Table, { Column } from "../../components/ui/Table";
 import SearchBar from "../../components/ui/SearchBar";
 import Select from "../../components/ui/Select";
 import Card from "../../components/ui/Card";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import { Livro } from "../../types";
 import { toast } from "react-toastify";
 
@@ -92,6 +93,8 @@ const LivrosListPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategoria, setSelectedCategoria] = useState("");
   const [filteredLivros, setFilteredLivros] = useState<Livro[]>([]);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [livroToDelete, setLivroToDelete] = useState<string>("");
 
   // Verificar se o usuário é admin
   const canEdit = user?.tipo === "admin";
@@ -180,14 +183,17 @@ const LivrosListPage: React.FC = () => {
     setSelectedCategoria(e.target.value);
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Tem certeza que deseja excluir este livro?")) {
-      try {
-        await dispatch(deleteLivro(id)).unwrap();
-        toast.success("Livro excluído com sucesso!");
-      } catch (error: any) {
-        toast.error(error || "Erro ao excluir livro");
-      }
+  const handleDeleteClick = (id: string) => {
+    setLivroToDelete(id);
+    setConfirmDeleteOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await dispatch(deleteLivro(livroToDelete)).unwrap();
+      toast.success("Livro excluído com sucesso!");
+    } catch (error: any) {
+      toast.error(error || "Erro ao excluir livro");
     }
   };
 
@@ -277,7 +283,7 @@ const LivrosListPage: React.FC = () => {
                 variant="danger"
                 size="small"
                 leftIcon={<FiTrash2 size={16} />}
-                onClick={() => item._id && handleDelete(item._id)}
+                onClick={() => item._id && handleDeleteClick(item._id)}
               >
                 Excluir
               </Button>
@@ -343,6 +349,17 @@ const LivrosListPage: React.FC = () => {
           striped
         />
       </Card>
+
+      <ConfirmDialog
+        isOpen={confirmDeleteOpen}
+        onClose={() => setConfirmDeleteOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Confirmação"
+        message="Tem certeza que deseja excluir este livro?"
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        variant="danger"
+      />
     </div>
   );
 };

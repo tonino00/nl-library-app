@@ -9,6 +9,7 @@ import Button from '../../components/ui/Button';
 import Table, { Column } from '../../components/ui/Table';
 import SearchBar from '../../components/ui/SearchBar';
 import Card from '../../components/ui/Card';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { Categoria } from '../../types';
 import { toast } from 'react-toastify';
 
@@ -40,6 +41,8 @@ const CategoriasListPage: React.FC = () => {
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredCategorias, setFilteredCategorias] = useState<Categoria[]>([]);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [categoriaToDelete, setCategoriaToDelete] = useState<string>('');
   
   // Verificar se o usuário é admin
   const canEdit = user?.tipo === 'admin';
@@ -82,14 +85,17 @@ const CategoriasListPage: React.FC = () => {
     setSearchTerm(term);
   };
   
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir esta categoria?')) {
-      try {
-        await dispatch(deleteCategoria(id)).unwrap();
-        toast.success('Categoria excluída com sucesso!');
-      } catch (error: any) {
-        toast.error(error || 'Erro ao excluir categoria');
-      }
+  const handleDeleteClick = (id: string) => {
+    setCategoriaToDelete(id);
+    setConfirmDeleteOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await dispatch(deleteCategoria(categoriaToDelete)).unwrap();
+      toast.success('Categoria excluída com sucesso!');
+    } catch (error: any) {
+      toast.error(error || 'Erro ao excluir categoria');
     }
   };
   
@@ -130,7 +136,7 @@ const CategoriasListPage: React.FC = () => {
                 variant="danger"
                 size="small"
                 leftIcon={<FiTrash2 size={16} />}
-                onClick={() => item._id && handleDelete(item._id)}
+                onClick={() => item._id && handleDeleteClick(item._id)}
               >
                 Excluir
               </Button>
@@ -177,6 +183,17 @@ const CategoriasListPage: React.FC = () => {
           striped
         />
       </Card>
+
+      <ConfirmDialog
+        isOpen={confirmDeleteOpen}
+        onClose={() => setConfirmDeleteOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Confirmação"
+        message="Tem certeza que deseja excluir esta categoria?"
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        variant="danger"
+      />
     </div>
   );
 };

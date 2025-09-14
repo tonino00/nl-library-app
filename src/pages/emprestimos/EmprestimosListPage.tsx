@@ -10,6 +10,7 @@ import Table, { Column } from '../../components/ui/Table';
 import SearchBar from '../../components/ui/SearchBar';
 import Select from '../../components/ui/Select';
 import Card from '../../components/ui/Card';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { Emprestimo } from '../../types';
 import { toast } from 'react-toastify';
 
@@ -91,6 +92,12 @@ const EmprestimosListPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [filteredEmprestimos, setFilteredEmprestimos] = useState<Emprestimo[]>([]);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [emprestimoToDelete, setEmprestimoToDelete] = useState<string>('');
+  const [confirmFinalizarOpen, setConfirmFinalizarOpen] = useState(false);
+  const [emprestimoToFinalizar, setEmprestimoToFinalizar] = useState<string>('');
+  const [confirmRenovarOpen, setConfirmRenovarOpen] = useState(false);
+  const [emprestimoToRenovar, setEmprestimoToRenovar] = useState<string>('');
   
   // Ref para controlar se já carregamos os dados
   const dataFetchedRef = React.useRef(false);
@@ -152,36 +159,45 @@ const EmprestimosListPage: React.FC = () => {
     setStatusFilter(e.target.value);
   };
   
-  const handleFinalizar = async (id: string) => {
-    if (window.confirm('Deseja finalizar este empréstimo? Isso irá registrar a devolução do livro.')) {
-      try {
-        await dispatch(finalizarEmprestimo(id)).unwrap();
-        toast.success('Empréstimo finalizado com sucesso!');
-      } catch (error: any) {
-        toast.error(error || 'Erro ao finalizar empréstimo');
-      }
+  const handleFinalizarClick = (id: string) => {
+    setEmprestimoToFinalizar(id);
+    setConfirmFinalizarOpen(true);
+  };
+
+  const handleConfirmFinalizar = async () => {
+    try {
+      await dispatch(finalizarEmprestimo(emprestimoToFinalizar)).unwrap();
+      toast.success('Empréstimo finalizado com sucesso!');
+    } catch (error: any) {
+      toast.error(error || 'Erro ao finalizar empréstimo');
     }
   };
   
-  const handleRenovar = async (id: string) => {
-    if (window.confirm('Deseja renovar este empréstimo?')) {
-      try {
-        await dispatch(renovarEmprestimo(id)).unwrap();
-        toast.success('Empréstimo renovado com sucesso!');
-      } catch (error: any) {
-        toast.error(error || 'Erro ao renovar empréstimo');
-      }
+  const handleRenovarClick = (id: string) => {
+    setEmprestimoToRenovar(id);
+    setConfirmRenovarOpen(true);
+  };
+
+  const handleConfirmRenovar = async () => {
+    try {
+      await dispatch(renovarEmprestimo(emprestimoToRenovar)).unwrap();
+      toast.success('Empréstimo renovado com sucesso!');
+    } catch (error: any) {
+      toast.error(error || 'Erro ao renovar empréstimo');
     }
   };
 
-  const handleRemove = async (id: string) => {
-    if (window.confirm('Deseja realmente excluir este empréstimo? Esta ação não pode ser desfeita.')) {
-      try {
-        await dispatch(deleteEmprestimo(id)).unwrap();
-        toast.success('Empréstimo excluído com sucesso!');
-      } catch (error: any) {
-        toast.error(error || 'Erro ao excluir empréstimo');
-      }
+  const handleRemoveClick = (id: string) => {
+    setEmprestimoToDelete(id);
+    setConfirmDeleteOpen(true);
+  };
+
+  const handleConfirmRemove = async () => {
+    try {
+      await dispatch(deleteEmprestimo(emprestimoToDelete)).unwrap();
+      toast.success('Empréstimo excluído com sucesso!');
+    } catch (error: any) {
+      toast.error(error || 'Erro ao excluir empréstimo');
     }
   };
   
@@ -249,7 +265,7 @@ const EmprestimosListPage: React.FC = () => {
                 variant="success"
                 size="small"
                 leftIcon={<FiCheck size={16} />}
-                onClick={() => item._id && handleFinalizar(item._id)}
+                onClick={() => item._id && handleFinalizarClick(item._id)}
               >
                 Devolver
               </Button>
@@ -259,7 +275,7 @@ const EmprestimosListPage: React.FC = () => {
                   variant="primary"
                   size="small"
                   leftIcon={<FiRepeat size={16} />}
-                  onClick={() => item._id && handleRenovar(item._id)}
+                  onClick={() => item._id && handleRenovarClick(item._id)}
                 >
                   Renovar
                 </Button>
@@ -281,7 +297,7 @@ const EmprestimosListPage: React.FC = () => {
             variant="danger"
             size="small"
             leftIcon={<FiTrash2 size={16} />}
-            onClick={() => item._id && handleRemove(item._id)}
+            onClick={() => item._id && handleRemoveClick(item._id)}
           >
             Excluir
           </Button>
@@ -342,6 +358,39 @@ const EmprestimosListPage: React.FC = () => {
           striped
         />
       </Card>
+
+      <ConfirmDialog
+        isOpen={confirmDeleteOpen}
+        onClose={() => setConfirmDeleteOpen(false)}
+        onConfirm={handleConfirmRemove}
+        title="Confirmação"
+        message="Deseja realmente excluir este empréstimo? Esta ação não pode ser desfeita."
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        variant="danger"
+      />
+
+      <ConfirmDialog
+        isOpen={confirmFinalizarOpen}
+        onClose={() => setConfirmFinalizarOpen(false)}
+        onConfirm={handleConfirmFinalizar}
+        title="Confirmação"
+        message="Deseja finalizar este empréstimo? Isso irá registrar a devolução do livro."
+        confirmText="Confirmar"
+        cancelText="Cancelar"
+        variant="info"
+      />
+
+      <ConfirmDialog
+        isOpen={confirmRenovarOpen}
+        onClose={() => setConfirmRenovarOpen(false)}
+        onConfirm={handleConfirmRenovar}
+        title="Confirmação"
+        message="Deseja renovar este empréstimo?"
+        confirmText="Renovar"
+        cancelText="Cancelar"
+        variant="warning"
+      />
     </div>
   );
 };
