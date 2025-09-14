@@ -14,6 +14,7 @@ import { Categoria } from '../../types';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Card from '../../components/ui/Card';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { toast } from 'react-toastify';
 
 const PageHeader = styled.div`
@@ -39,6 +40,15 @@ const ButtonContainer = styled.div`
   gap: 10px;
   justify-content: flex-end;
   margin-top: 20px;
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  min-height: 200px;
 `;
 
 const CategoriaFormPage: React.FC = () => {
@@ -101,7 +111,13 @@ const CategoriaFormPage: React.FC = () => {
       
       <Card>
         {isLoading && isEditMode ? (
-          <p>Carregando...</p>
+          <LoadingContainer>
+            <LoadingSpinner 
+              size="medium" 
+              showLogo={true}
+              message="Carregando categoria..."
+            />
+          </LoadingContainer>
         ) : (
           <Form onSubmit={handleSubmit(onSubmit)}>
             <Input

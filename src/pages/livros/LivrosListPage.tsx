@@ -220,7 +220,7 @@ const LivrosListPage: React.FC = () => {
         ),
     },
     {
-      header: "Título da obra",
+      header: "Título",
       key: "titulo",
       width: "250px",
     },
@@ -245,16 +245,16 @@ const LivrosListPage: React.FC = () => {
       render: (item) => <div>{item.quantidade}</div>,
     },
 
-    // {
-    //   header: 'Disponibilidade',
-    //   render: (item) => (
-    //     <div>
-    //       <AvailabilityStatus $available={(item.disponiveis || 0) > 0}>
-    //         {item.disponiveis || 0}/{item.quantidade || 0}
-    //       </AvailabilityStatus>
-    //     </div>
-    //   ),
-    // },
+    {
+      header: 'Disponibilidade',
+      render: (item) => (
+        <div>
+          <AvailabilityStatus $available={(item.disponiveis || 0) > 0}>
+            {item.disponiveis || 0}/{item.quantidade || 0}
+          </AvailabilityStatus>
+        </div>
+      ),
+    },
     {
       header: "Ações",
       render: (item) => (

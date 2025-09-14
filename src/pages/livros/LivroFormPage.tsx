@@ -16,6 +16,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import Card from '../../components/ui/Card';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { toast } from 'react-toastify';
 
 const PageHeader = styled.div`
@@ -71,6 +72,15 @@ const PlaceholderImage = styled.div`
   color: #666;
   font-size: 3rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px;
+  min-height: 300px;
 `;
 
 const LivroFormPage: React.FC = () => {
@@ -138,7 +148,17 @@ const LivroFormPage: React.FC = () => {
   };
   
   if ((livroLoading && isEditMode) || categoriasLoading) {
-    return <div>Carregando...</div>;
+    return (
+      <Card>
+        <LoadingContainer>
+          <LoadingSpinner 
+            size="large" 
+            showLogo={true}
+            message={isEditMode ? "Carregando informações do livro..." : "Carregando categorias..."}
+          />
+        </LoadingContainer>
+      </Card>
+    );
   }
   
   return (
