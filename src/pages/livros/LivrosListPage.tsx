@@ -347,6 +347,8 @@ const LivrosListPage: React.FC = () => {
           emptyMessage="Nenhum livro encontrado"
           hoverable
           striped
+          paginated={true}
+          itemsPerPage={6}
         />
       </Card>
 

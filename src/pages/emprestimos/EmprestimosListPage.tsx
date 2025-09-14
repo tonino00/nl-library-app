@@ -356,6 +356,8 @@ const EmprestimosListPage: React.FC = () => {
           emptyMessage="Nenhum empréstimo encontrado"
           hoverable
           striped
+          paginated={true}
+          itemsPerPage={6}
         />
       </Card>
 
