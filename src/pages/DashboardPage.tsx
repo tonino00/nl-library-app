@@ -754,7 +754,7 @@ const DashboardPage: React.FC = () => {
                               Devolução: {formatDate(emprestimo.dataPrevistaDevolucao)}
                             </div>
                             <div>
-                              {emprestimo.multa ? `Multa: R$ ${emprestimo.multa.toFixed(2)}` : ''}
+                              {emprestimo.multa ? `Multa: R$ ${Number(emprestimo.multa).toFixed(2)}` : ''}
                             </div>
                           </ItemMeta>
                         </ItemListItem>
