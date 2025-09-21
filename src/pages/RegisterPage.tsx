@@ -84,7 +84,7 @@ const RegisterPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [noAdminExists, setNoAdminExists] = useState(false);
-  const [userType, setUserType] = useState<'leitor' | 'admin'>('leitor');
+  const [userType, setUserType] = useState<'leitor' | 'admin' | 'comunidade'>('leitor');
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   
@@ -178,8 +178,8 @@ const RegisterPage: React.FC = () => {
               <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(0,123,255,0.1)', borderRadius: '8px' }}>
                 <h3 style={{ marginTop: 0 }}>Primeiro Acesso Detectado</h3>
                 <p>Você será o primeiro usuário do sistema. Escolha o tipo de conta:</p>
-                <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                  <label style={{ display: 'flex', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
                     <input 
                       type="radio" 
                       name="userType" 
@@ -188,7 +188,7 @@ const RegisterPage: React.FC = () => {
                     />
                     <span style={{ marginLeft: '0.5rem' }}>Administrador</span>
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
                     <input 
                       type="radio" 
                       name="userType" 
@@ -196,6 +196,42 @@ const RegisterPage: React.FC = () => {
                       onChange={() => setUserType('leitor')} 
                     />
                     <span style={{ marginLeft: '0.5rem' }}>Leitor</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <input 
+                      type="radio" 
+                      name="userType" 
+                      checked={userType === 'comunidade'}
+                      onChange={() => setUserType('comunidade')} 
+                    />
+                    <span style={{ marginLeft: '0.5rem' }}>Comunidade</span>
+                  </label>
+                </div>
+              </div>
+            )}
+            
+            {!noAdminExists && (
+              <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(0,123,255,0.1)', borderRadius: '8px' }}>
+                <h3 style={{ marginTop: 0 }}>Tipo de Usuário</h3>
+                <p>Selecione o tipo de conta que deseja criar:</p>
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <input 
+                      type="radio" 
+                      name="userType" 
+                      checked={userType === 'leitor'}
+                      onChange={() => setUserType('leitor')} 
+                    />
+                    <span style={{ marginLeft: '0.5rem' }}>Leitor</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <input 
+                      type="radio" 
+                      name="userType" 
+                      checked={userType === 'comunidade'}
+                      onChange={() => setUserType('comunidade')} 
+                    />
+                    <span style={{ marginLeft: '0.5rem' }}>Comunidade</span>
                   </label>
                 </div>
               </div>

@@ -163,6 +163,7 @@ const UsuarioFormPage: React.FC = () => {
   
   const tipoUsuarioOptions = [
     { value: 'leitor', label: 'Leitor' },
+    { value: 'comunidade', label: 'Comunidade' },
     { value: 'admin', label: 'Administrador' }
   ];
   

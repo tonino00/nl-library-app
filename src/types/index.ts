@@ -46,7 +46,7 @@ export interface Usuario {
   nome: string;
   email: string;
   senha?: string;
-  tipo?: 'admin' | 'leitor';
+  tipo?: 'admin' | 'leitor' | 'comunidade';
   documento: string;
   telefone: string;
   endereco?: string;

@@ -5,11 +5,11 @@ import { RootState } from '../../store';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import styled from 'styled-components';
 
-type UserRole = 'admin' | 'leitor';
+type UserRole = 'admin' | 'leitor' | 'comunidade';
 
 interface PrivateRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'admin' | 'leitor';
+  requiredRole?: 'admin' | 'leitor' | 'comunidade';
 }
 
 // Component to prevent navigation throttling by avoiding useEffect for auth checks
@@ -60,8 +60,8 @@ const LoadingContainer = styled.div`
     // Define role hierarchy com verificação mais flexível
     let hasAccess = false;
     
-    if (requiredRole === 'leitor') {
-      // Qualquer usuário autenticado pode acessar rotas de leitor
+    if (requiredRole === 'leitor' || requiredRole === 'comunidade') {
+      // Qualquer usuário autenticado pode acessar rotas de leitor ou comunidade
       hasAccess = true;
     } else if (requiredRole === 'admin') {
       // Para rotas de admin, verifica múltiplos formatos possíveis
