@@ -11,7 +11,7 @@ const api = axios.create({
 // Interceptor para incluir token de autenticação
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -32,8 +32,8 @@ api.interceptors.response.use(
       switch (error.response.status) {
         case 401:
           // Limpa dados de autenticação e redireciona para login
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('user');
           window.location.href = '/login';
           break;
         case 403:

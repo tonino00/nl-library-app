@@ -15,7 +15,7 @@ interface LoginResponse {
 // Estado inicial
 const initialState: AuthState = {
   user: authService.getCurrentUser(),
-  token: localStorage.getItem('token'),
+  token: sessionStorage.getItem('token'),
   isAuthenticated: authService.isAuthenticated(),
   isLoading: false,
   error: null,
@@ -46,7 +46,7 @@ export const checkAuth = createAsyncThunk(
   async (_, { rejectWithValue, dispatch }) => {
     try {
       // Verifica se há token antes de fazer a chamada
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       if (!token) {
         // Se não houver token, limpa o estado de autenticação e rejeita
         dispatch(logout());

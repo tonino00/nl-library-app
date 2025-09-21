@@ -17,20 +17,28 @@ export const authService = {
   login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
     const response = await api.post(`${ENDPOINT}/login`, credentials);
     
-    // Salvar token e usuário no localStorage
+    // Salvar token e usuário no sessionStorage (mais seguro que localStorage)
     if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
+      sessionStorage.setItem('token', response.data.token);
       // A API retorna o usuário em diferentes formatos, verificar todas as possíveis estruturas
       const userData = response.data.user || response.data.usuario || response.data.data;
-      localStorage.setItem('user', JSON.stringify(userData));
+      // Armazenar apenas dados não sensíveis do usuário
+      const safeUserData = {
+        _id: userData._id,
+        nome: userData.nome,
+        email: userData.email,
+        tipo: userData.tipo,
+        ativo: userData.ativo
+      };
+      sessionStorage.setItem('user', JSON.stringify(safeUserData));
     }
     
     return response.data;
   },
 
   logout: (): void => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
   },
 
   register: async (usuario: Usuario): Promise<Usuario> => {
@@ -39,7 +47,7 @@ export const authService = {
   },
 
   getCurrentUser: (): Usuario | null => {
-    const userStr = localStorage.getItem('user');
+    const userStr = sessionStorage.getItem('user');
     // Verificar se userStr existe e não é a string 'undefined'
     if (userStr && userStr !== 'undefined') {
       try {
@@ -47,27 +55,27 @@ export const authService = {
       } catch (error) {
         console.error('Erro ao analisar dados do usuário:', error);
         // Se houver erro ao fazer parse, remover o item inválido
-        localStorage.removeItem('user');
+        sessionStorage.removeItem('user');
       }
     }
     return null;
   },
 
   isAuthenticated: (): boolean => {
-    return !!localStorage.getItem('token');
+    return !!sessionStorage.getItem('token');
   },
 
   checkAuth: async (): Promise<Usuario> => {
     try {
-      // Primeiro tentamos recuperar o objeto de usuário do localStorage
-      const userStr = localStorage.getItem('user');
+      // Primeiro tentamos recuperar o objeto de usuário do sessionStorage
+      const userStr = sessionStorage.getItem('user');
       let usuario = null;
 
       if (userStr && userStr !== 'undefined') {
         try {
           usuario = JSON.parse(userStr);
         } catch (e) {
-          console.error('Erro ao fazer parse do usuário do localStorage:', e);
+          console.error('Erro ao fazer parse do usuário do sessionStorage:', e);
         }
       }
 
@@ -84,8 +92,15 @@ export const authService = {
         const response = await api.get(`${ENDPOINT}/${usuario._id}`);
         const updatedUser = response.data.data || response.data;
         
-        // Atualizamos o cache do usuário
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        // Atualizamos o cache do usuário (apenas dados não sensíveis)
+        const safeUserData = {
+          _id: updatedUser._id,
+          nome: updatedUser.nome,
+          email: updatedUser.email,
+          tipo: updatedUser.tipo,
+          ativo: updatedUser.ativo
+        };
+        sessionStorage.setItem('user', JSON.stringify(safeUserData));
         
         return updatedUser;
       }

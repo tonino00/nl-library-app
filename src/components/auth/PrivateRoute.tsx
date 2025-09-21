@@ -23,7 +23,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
   const { user, isAuthenticated, isLoading } = useSelector((state: RootState) => state.auth);
   
   // Direct check for token without relying on hooks
-  const hasToken = localStorage.getItem('token') !== null;
+  const hasToken = sessionStorage.getItem('token') !== null;
 
 const LoadingContainer = styled.div`
   display: flex;
