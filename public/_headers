@@ -1,0 +1,35 @@
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https://nl-library-api.onrender.com; font-src 'self' data:;
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer-when-downgrade
+  X-XSS-Protection: 1; mode=block
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+/login
+  Cache-Control: no-store, max-age=0
+
+/registro
+  Cache-Control: no-store, max-age=0
+
+/recuperar-senha
+  Cache-Control: no-store, max-age=0
+
+/redefinir-senha/*
+  Cache-Control: no-store, max-age=0
+
+/api/*
+  Cache-Control: no-store, max-age=0
+
+/*.js
+  Cache-Control: public, max-age=31536000
+
+/*.css
+  Cache-Control: public, max-age=31536000
+
+/*.png
+  Cache-Control: public, max-age=31536000
+
+/*.svg
+  Cache-Control: public, max-age=31536000

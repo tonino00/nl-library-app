@@ -4,18 +4,23 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import styled from 'styled-components';
+import { checkPermission, hasAnyPermission } from '../../services/permissionService';
 
 type UserRole = 'admin' | 'leitor' | 'comunidade';
 
 interface PrivateRouteProps {
   children: React.ReactNode;
   requiredRole?: 'admin' | 'leitor' | 'comunidade';
+  requiredPermission?: string;
+  requiredPermissions?: string[];
 }
 
 // Component to prevent navigation throttling by avoiding useEffect for auth checks
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ 
   children, 
-  requiredRole 
+  requiredRole,
+  requiredPermission,
+  requiredPermissions
 }) => {
   const location = useLocation();
   
@@ -53,7 +58,21 @@ const LoadingContainer = styled.div`
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
-  // Check role permissions if necessary
+  // Verificar permissão específica, se fornecida
+  if (requiredPermission && user) {
+    if (!checkPermission(user, requiredPermission)) {
+      return <Navigate to="/nao-autorizado" replace />;
+    }
+  }
+  
+  // Verificar lista de permissões, se fornecida
+  if (requiredPermissions && requiredPermissions.length > 0 && user) {
+    if (!hasAnyPermission(user, requiredPermissions)) {
+      return <Navigate to="/nao-autorizado" replace />;
+    }
+  }
+  
+  // Verificação de role para compatibilidade com código existente
   if (requiredRole && user) {
     const userRole = user.tipo;
     

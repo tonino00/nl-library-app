@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { authService } from '../../services/authService';
 import { AuthState, Usuario } from '../../types';
+import { sanitizeObject } from '../../utils/sanitize';
+import { validatePassword } from '../../utils/passwordValidator';
 
 interface LoginCredentials {
   email: string;
@@ -12,19 +14,44 @@ interface LoginResponse {
   token: string;
 }
 
+// Estender o tipo AuthState para incluir propriedades de segurança
+interface SecurityEnhancedAuthState extends AuthState {
+  loginAttempts: number;
+  loginLockedUntil: number | null;
+  lastLoginAttempt: number | null;
+}
+
 // Estado inicial
-const initialState: AuthState = {
+const initialState: SecurityEnhancedAuthState = {
   user: authService.getCurrentUser(),
   token: sessionStorage.getItem('token'),
   isAuthenticated: authService.isAuthenticated(),
   isLoading: false,
   error: null,
+  loginAttempts: 0,
+  loginLockedUntil: null,
+  lastLoginAttempt: null
 };
 
 // Async thunks
 export const login = createAsyncThunk(
   'auth/login',
-  async (credentials: LoginCredentials, { rejectWithValue }) => {
+  async (credentials: LoginCredentials, { rejectWithValue, getState }) => {
+    // Obter o estado atual para verificar o bloqueio de login
+    const state = getState() as { auth: SecurityEnhancedAuthState };
+    const { loginAttempts, loginLockedUntil, lastLoginAttempt } = state.auth;
+    
+    // Verificar se o login está bloqueado
+    if (loginLockedUntil && Date.now() < loginLockedUntil) {
+      const minutesRemaining = Math.ceil((loginLockedUntil - Date.now()) / 60000);
+      return rejectWithValue(`Muitas tentativas de login. Conta temporariamente bloqueada. Tente novamente em ${minutesRemaining} minuto(s).`);
+    }
+    
+    // Verificar se há um delay entre tentativas (anti-brute force)
+    if (lastLoginAttempt && Date.now() - lastLoginAttempt < 1000) { // 1 segundo entre tentativas
+      return rejectWithValue('Por favor, aguarde um momento antes de tentar novamente.');
+    }
+    
     try {
       const response = await authService.login(credentials);
       return response;
@@ -74,7 +101,18 @@ export const register = createAsyncThunk(
   'auth/register',
   async (userData: Usuario, { rejectWithValue }) => {
     try {
-      const response = await authService.register(userData);
+      // Validar a força da senha
+      if (userData.senha) {
+        const passwordValidation = validatePassword(userData.senha);
+        if (!passwordValidation.isValid) {
+          return rejectWithValue(passwordValidation.message);
+        }
+      }
+      
+      // Sanitizar dados do usuário para evitar XSS
+      const sanitizedUserData = sanitizeObject(userData);
+      
+      const response = await authService.register(sanitizedUserData);
       return response;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Erro ao realizar registro');
@@ -105,10 +143,23 @@ const authSlice = createSlice({
         const userData = action.payload.user || action.payload.usuario || action.payload.data;
         state.user = userData;
         state.token = action.payload.token;
+        
+        // Resetar contadores de segurança quando o login é bem-sucedido
+        state.loginAttempts = 0;
+        state.loginLockedUntil = null;
+        state.lastLoginAttempt = null;
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
+        state.lastLoginAttempt = Date.now();
+        state.loginAttempts += 1;
+        
+        // Bloquear login após 5 tentativas falhas
+        if (state.loginAttempts >= 5) {
+          state.loginLockedUntil = Date.now() + 15 * 60 * 1000; // 15 minutos de bloqueio
+          state.loginAttempts = 0;
+        }
       })
       
       // Logout

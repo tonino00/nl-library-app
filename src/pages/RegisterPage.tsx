@@ -2,14 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { FiUser, FiLock, FiMail, FiPhone, FiFileText, FiUserPlus, FiShield } from 'react-icons/fi';
-import { register } from '../features/auth/authSlice';
+import { FiUser, FiLock, FiMail, FiPhone, FiFileText, FiUserPlus, FiShield, FiAlertTriangle } from 'react-icons/fi';
+import { register as registerUser } from '../features/auth/authSlice';
 import { AppDispatch } from '../store';
 import { Usuario } from '../types';
 import api from '../services/api';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { toast } from 'react-toastify';
+import { useForm, SubmitHandler } from 'react-hook-form';
+import { validatePassword, getPasswordStrength, getPasswordStrengthLabel } from '../utils/passwordValidator';
+import { sanitizeHtml } from '../utils/sanitize';
 
 const RegisterContainer = styled.div`
   display: flex;
@@ -71,22 +74,66 @@ const Icon = styled.div`
   margin-bottom: 1rem;
 `;
 
+// Interface para os dados do formulário
+interface RegisterFormData {
+  nome: string;
+  email: string;
+  senha: string;
+  confirmarSenha: string;
+  documento: string;
+  telefone: string;
+  dataNascimento: string;
+}
+
 const RegisterPage: React.FC = () => {
-  const [formData, setFormData] = useState({
-    nome: '',
-    email: '',
-    senha: '',
-    confirmarSenha: '',
-    documento: '',
-    telefone: '',
-    dataNascimento: '',
+  // Usar react-hook-form para validação robusta
+  const { 
+    register, 
+    handleSubmit, 
+    watch, 
+    formState: { errors },
+    setError,
+    setValue
+  } = useForm<RegisterFormData>({
+    mode: 'onBlur', // Validar campos quando perderem o foco
+    defaultValues: {
+      nome: '',
+      email: '',
+      senha: '',
+      confirmarSenha: '',
+      documento: '',
+      telefone: '',
+      dataNascimento: ''
+    }
   });
+  
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [noAdminExists, setNoAdminExists] = useState(false);
   const [userType, setUserType] = useState<'leitor' | 'admin' | 'comunidade'>('leitor');
+  const [passwordStrength, setPasswordStrength] = useState(0);
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  
+  // Observar o campo de senha para calcular sua força
+  const senha = watch('senha');
+  
+  useEffect(() => {
+    if (senha) {
+      setPasswordStrength(getPasswordStrength(senha));
+    } else {
+      setPasswordStrength(0);
+    }
+  }, [senha]);
+  
+  // Função para obter cor baseada na força da senha
+  const getStrengthColor = (strength: number): string => {
+    if (strength < 30) return 'var(--danger-color)';
+    if (strength < 50) return '#ff9800'; // Laranja
+    if (strength < 70) return '#ffd600'; // Amarelo
+    if (strength < 90) return '#4caf50'; // Verde
+    return 'var(--success-color)';
+  };
   
   // Verificar se já existe pelo menos um administrador no sistema
   useEffect(() => {
@@ -112,37 +159,58 @@ const RegisterPage: React.FC = () => {
     checkAdminExists();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (formData.senha !== formData.confirmarSenha) {
-      toast.error('As senhas não coincidem');
+  // Manipulador de submissão do formulário usando react-hook-form
+  const onSubmit: SubmitHandler<RegisterFormData> = async (data) => {
+    // Validação personalizada de senha
+    const { isValid, message } = validatePassword(data.senha);
+    if (!isValid) {
+      setError('senha', { type: 'manual', message });
       return;
     }
-
+    
+    // Verificar se as senhas coincidem
+    if (data.senha !== data.confirmarSenha) {
+      setError('confirmarSenha', { 
+        type: 'manual', 
+        message: 'As senhas não coincidem' 
+      });
+      return;
+    }
+    
     setSubmitting(true);
     try {
-      // Remover o campo confirmarSenha
-      const { confirmarSenha, ...userData } = formData;
+      // Remover o campo confirmarSenha e sanitizar dados
+      const { confirmarSenha, ...userData } = data;
       
       // Adicionar campos necessários para o cadastro
       const newUser: Usuario = {
         ...userData,
         tipo: userType, // Permite criar admin se não existir nenhum
         ativo: true,
-        dataNascimento: new Date() // Usar data atual como padrão, pode ser atualizada depois pelo usuário
+        dataNascimento: new Date(data.dataNascimento || Date.now())
       };
-
-      await dispatch(register(newUser)).unwrap();
+      
+      // Dispatch da ação de registro
+      await dispatch(registerUser(newUser)).unwrap();
       toast.success('Cadastro realizado com sucesso! Você já pode fazer login.');
       navigate('/login');
     } catch (error: any) {
-      toast.error(error || 'Erro ao fazer cadastro. Tente novamente.');
+      toast.error(typeof error === 'string' ? error : 'Erro ao fazer cadastro. Tente novamente.');
+      
+      // Capturar erros específicos da API e mapear para os campos do formulário
+      if (error?.response?.data?.errors) {
+        const apiErrors = error.response.data.errors;
+        
+        // Mapear erros da API para os campos do formulário
+        Object.keys(apiErrors).forEach(fieldName => {
+          if (fieldName in data) {
+            setError(fieldName as keyof RegisterFormData, {
+              type: 'manual',
+              message: sanitizeHtml(apiErrors[fieldName])
+            });
+          }
+        });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -173,7 +241,7 @@ const RegisterPage: React.FC = () => {
             </p>
           </Logo>
           
-          <Form onSubmit={handleSubmit}>
+          <Form onSubmit={handleSubmit(onSubmit)}>
             {noAdminExists && (
               <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(0,123,255,0.1)', borderRadius: '8px' }}>
                 <h3 style={{ marginTop: 0 }}>Primeiro Acesso Detectado</h3>
@@ -240,10 +308,18 @@ const RegisterPage: React.FC = () => {
             <FormRow>
               <Input
                 label="Nome Completo"
-                name="nome"
-                value={formData.nome}
-                onChange={handleChange}
-                required
+                {...register('nome', { 
+                  required: 'O nome completo é obrigatório',
+                  minLength: {
+                    value: 3,
+                    message: 'O nome deve ter pelo menos 3 caracteres'
+                  },
+                  maxLength: {
+                    value: 100,
+                    message: 'O nome não pode ultrapassar 100 caracteres'
+                  }
+                })}
+                error={errors.nome?.message}
                 fullWidth
                 leftIcon={<FiUser />}
               />
@@ -253,10 +329,14 @@ const RegisterPage: React.FC = () => {
               <Input
                 label="Email"
                 type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
+                {...register('email', { 
+                  required: 'O email é obrigatório',
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: 'Email inválido'
+                  }
+                })}
+                error={errors.email?.message}
                 fullWidth
                 leftIcon={<FiMail />}
               />
@@ -265,19 +345,27 @@ const RegisterPage: React.FC = () => {
             <FormRow>
               <Input
                 label="Documento (CPF/RG)"
-                name="documento"
-                value={formData.documento}
-                onChange={handleChange}
-                required
+                {...register('documento', { 
+                  required: 'O documento é obrigatório',
+                  minLength: {
+                    value: 5,
+                    message: 'Documento inválido'
+                  }
+                })}
+                error={errors.documento?.message}
                 fullWidth
                 leftIcon={<FiFileText />}
               />
               
               <Input
                 label="Telefone"
-                name="telefone"
-                value={formData.telefone}
-                onChange={handleChange}
+                {...register('telefone', {
+                  pattern: {
+                    value: /^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/,
+                    message: 'Formato de telefone inválido'
+                  }
+                })}
+                error={errors.telefone?.message}
                 fullWidth
                 leftIcon={<FiPhone />}
               />
@@ -285,33 +373,104 @@ const RegisterPage: React.FC = () => {
             
             <FormRow>
               <Input
-                label="Senha"
-                type="password"
-                name="senha"
-                value={formData.senha}
-                onChange={handleChange}
-                required
+                label="Data de Nascimento"
+                type="date"
+                {...register('dataNascimento')}
+                error={errors.dataNascimento?.message}
                 fullWidth
-                leftIcon={<FiLock />}
               />
+            </FormRow>
+            
+            <FormRow>
+              <div style={{ width: '100%' }}>
+                <Input
+                  label="Senha"
+                  type="password"
+                  {...register('senha', { 
+                    required: 'A senha é obrigatória',
+                    minLength: {
+                      value: 8,
+                      message: 'A senha deve ter pelo menos 8 caracteres'
+                    }
+                  })}
+                  error={errors.senha?.message}
+                  fullWidth
+                  leftIcon={<FiLock />}
+                />
+                
+                {/* Indicador de força da senha */}
+                {senha && (
+                  <div style={{ marginTop: '5px' }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center',
+                      fontSize: '0.8rem', 
+                      justifyContent: 'space-between',
+                      marginBottom: '3px'
+                    }}>
+                      <span>Força da senha:</span>
+                      <span style={{ color: getStrengthColor(passwordStrength) }}>
+                        {getPasswordStrengthLabel(passwordStrength)}
+                      </span>
+                    </div>
+                    <div style={{ 
+                      height: '5px', 
+                      width: '100%', 
+                      backgroundColor: '#e0e0e0', 
+                      borderRadius: '3px',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        height: '100%', 
+                        width: `${passwordStrength}%`,
+                        backgroundColor: getStrengthColor(passwordStrength),
+                        transition: 'width 0.3s, background-color 0.3s'
+                      }}></div>
+                    </div>
+                  </div>
+                )}
+              </div>
               
               <Input
                 label="Confirmar Senha"
                 type="password"
-                name="confirmarSenha"
-                value={formData.confirmarSenha}
-                onChange={handleChange}
-                required
+                {...register('confirmarSenha', {
+                  required: 'Por favor confirme sua senha',
+                  validate: value => value === watch('senha') || 'As senhas não coincidem'
+                })}
+                error={errors.confirmarSenha?.message}
                 fullWidth
                 leftIcon={<FiLock />}
               />
             </FormRow>
+            
+            {/* Requisitos de senha */}
+            <div style={{ 
+              backgroundColor: 'rgba(0,0,0,0.03)', 
+              padding: '10px', 
+              borderRadius: '8px',
+              marginBottom: '15px',
+              fontSize: '0.85rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
+                <FiAlertTriangle style={{ marginRight: '5px', color: 'var(--warning-color)' }} />
+                <strong>Requisitos de senha:</strong>
+              </div>
+              <ul style={{ margin: '5px 0 0 20px', padding: 0 }}>
+                <li>Mínimo de 8 caracteres</li>
+                <li>Pelo menos uma letra maiúscula</li>
+                <li>Pelo menos uma letra minúscula</li>
+                <li>Pelo menos um número</li>
+                <li>Pelo menos um caractere especial (@#$%^&+=!)</li>
+              </ul>
+            </div>
             
             <Button 
               type="submit" 
               variant="primary" 
               fullWidth
               isLoading={submitting}
+              disabled={submitting || Object.keys(errors).length > 0}
             >
               Criar Conta
             </Button>
