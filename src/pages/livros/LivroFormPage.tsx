@@ -209,7 +209,7 @@ const LivroFormPage: React.FC = () => {
           <FormRow>
             <Input
               label="Número Classificado"
-              {...register('isbn', { required: 'O ISBN é obrigatório' })}
+              {...register('isbn')}
               error={errors.isbn?.message}
               placeholder="Número Classificado"
               fullWidth
@@ -217,7 +217,7 @@ const LivroFormPage: React.FC = () => {
             
             <Input
               label="Editora"
-              {...register('editora', { required: 'A editora é obrigatória' })}
+              {...register('editora')}
               error={errors.editora?.message}
               placeholder="Nome da editora"
               fullWidth
@@ -227,7 +227,6 @@ const LivroFormPage: React.FC = () => {
               label="Ano de Publicação"
               type="number"
               {...register('anoPublicacao', { 
-                required: 'O ano de publicação é obrigatório',
                 valueAsNumber: true,
                 min: { value: 1000, message: 'Ano inválido' },
                 max: { value: new Date().getFullYear(), message: 'Não pode ser maior que o ano atual' }

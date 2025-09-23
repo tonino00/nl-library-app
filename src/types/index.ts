@@ -28,9 +28,9 @@ export interface Livro {
   titulo: string;
   autor: string;
   autorEspiritual?: string;
-  isbn: string;
-  editora: string;
-  anoPublicacao: number;
+  isbn?: string;
+  editora?: string;
+  anoPublicacao?: number;
   categoria: string | Categoria;
   quantidade?: number;
   disponiveis?: number;
