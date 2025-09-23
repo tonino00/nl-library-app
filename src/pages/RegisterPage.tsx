@@ -179,7 +179,7 @@ const RegisterPage: React.FC = () => {
                 <h3 style={{ marginTop: 0 }}>Primeiro Acesso Detectado</h3>
                 <p>Você será o primeiro usuário do sistema. Escolha o tipo de conta:</p>
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  {/* <label style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
                     <input 
                       type="radio" 
                       name="userType" 
@@ -187,7 +187,7 @@ const RegisterPage: React.FC = () => {
                       onChange={() => setUserType('admin')} 
                     />
                     <span style={{ marginLeft: '0.5rem' }}>Administrador</span>
-                  </label>
+                  </label> */}
                   <label style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
                     <input 
                       type="radio" 

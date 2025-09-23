@@ -170,7 +170,7 @@ const LoginPage: React.FC = () => {
             
             <LoginLinks>
               <Link to="/registro">Criar uma nova conta</Link>
-              <Link to="/recuperar-senha">Esqueceu sua senha?</Link>
+              {/* <Link to="/recuperar-senha">Esqueceu sua senha?</Link> */}
             </LoginLinks>
           </Form>
         </div>
