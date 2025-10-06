@@ -261,43 +261,52 @@ const LivroDetailPage: React.FC = () => {
                 : "Indisponível"}
             </AvailabilityBadge>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "10px",
-              }}
-            >
-              <InfoItem>
-                <FiTag />
-                <InfoLabel>Número Classificado:</InfoLabel>
-                {livro.isbn}
-              </InfoItem>
-
-              {livro.localizacao && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+              {/* Coluna da esquerda */}
+              <div>
                 <InfoItem>
                   <FiTag />
-                  <InfoLabel>Novo Número de Classificação:</InfoLabel>
-                  {livro.localizacao}
+                  <InfoLabel>Número Classificado:</InfoLabel>
+                  {livro.isbn}
                 </InfoItem>
-              )}
 
-              <InfoItem>
-                <FiCalendar />
-                <InfoLabel>Ano:</InfoLabel>
-                {livro.anoPublicacao}
-              </InfoItem>
+                <InfoItem>
+                  <FiCalendar />
+                  <InfoLabel>Ano:</InfoLabel>
+                  {livro.anoPublicacao}
+                </InfoItem>
 
-              <InfoItem>
-                <FiTag />
-                <InfoLabel>Categoria:</InfoLabel>
-                {formatCategoriaName()}
-              </InfoItem>
+                <InfoItem>
+                  <FiTag />
+                  <InfoLabel>Categoria:</InfoLabel>
+                  {formatCategoriaName()}
+                </InfoItem>
 
-              <InfoItem>
-                <InfoLabel>Editora:</InfoLabel>
-                {livro.editora}
-              </InfoItem>
+                <InfoItem>
+                  <InfoLabel>Editora:</InfoLabel>
+                  {livro.editora}
+                </InfoItem>
+              </div>
+              
+              {/* Coluna da direita */}
+              <div>
+                {livro.localizacao && (
+                  <InfoItem style={{ flexDirection: "column", alignItems: "flex-start" }}>
+                    <div style={{ display: "flex", alignItems: "center", marginBottom: "5px" }}>
+                      <FiTag style={{ marginRight: "10px" }} />
+                      <InfoLabel>Novo Número de Classificação:</InfoLabel>
+                    </div>
+                    <div style={{ 
+                      wordBreak: "break-word", 
+                      maxWidth: "100%", 
+                      marginLeft: "25px", 
+                      lineHeight: "1.5"
+                    }}>
+                      {livro.localizacao}
+                    </div>
+                  </InfoItem>
+                )}
+              </div>
             </div>
 
             {livro.descricao && (
