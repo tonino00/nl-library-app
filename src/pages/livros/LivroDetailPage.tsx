@@ -264,11 +264,11 @@ const LivroDetailPage: React.FC = () => {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
               {/* Coluna da esquerda */}
               <div>
-                <InfoItem>
+                {/* <InfoItem>
                   <FiTag />
                   <InfoLabel>Número Classificado:</InfoLabel>
                   {livro.isbn}
-                </InfoItem>
+                </InfoItem> */}
 
                 <InfoItem>
                   <FiCalendar />
