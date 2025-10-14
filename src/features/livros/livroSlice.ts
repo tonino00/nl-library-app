@@ -6,6 +6,7 @@ import { Livro, LivroState } from '../../types';
 const initialState: LivroState = {
   livros: [],
   livro: null,
+  total: 0,
   isLoading: false,
   error: null,
 };
@@ -108,9 +109,10 @@ const livroSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(fetchLivros.fulfilled, (state, action: PayloadAction<Livro[]>) => {
+      .addCase(fetchLivros.fulfilled, (state, action: PayloadAction<{ livros: Livro[]; total?: number }>) => {
         state.isLoading = false;
-        state.livros = action.payload;
+        state.livros = action.payload.livros;
+        state.total = action.payload.total || action.payload.livros.length;
       })
       .addCase(fetchLivros.rejected, (state, action) => {
         state.isLoading = false;
@@ -184,9 +186,10 @@ const livroSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(fetchLivrosByCategoria.fulfilled, (state, action: PayloadAction<Livro[]>) => {
+      .addCase(fetchLivrosByCategoria.fulfilled, (state, action: PayloadAction<{ livros: Livro[]; total?: number }>) => {
         state.isLoading = false;
-        state.livros = action.payload;
+        state.livros = action.payload.livros;
+        state.total = action.payload.total || action.payload.livros.length;
       })
       .addCase(fetchLivrosByCategoria.rejected, (state, action) => {
         state.isLoading = false;
@@ -198,9 +201,10 @@ const livroSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(pesquisarLivros.fulfilled, (state, action: PayloadAction<Livro[]>) => {
+      .addCase(pesquisarLivros.fulfilled, (state, action: PayloadAction<{ livros: Livro[]; total?: number }>) => {
         state.isLoading = false;
-        state.livros = action.payload;
+        state.livros = action.payload.livros;
+        state.total = action.payload.total || action.payload.livros.length;
       })
       .addCase(pesquisarLivros.rejected, (state, action) => {
         state.isLoading = false;

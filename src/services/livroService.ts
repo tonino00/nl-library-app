@@ -1,15 +1,23 @@
 import api from './api';
 import { Livro } from '../types';
 
+interface ApiResponse {
+  data: Livro[] | Livro;
+  total?: number;
+  sucesso?: boolean;
+  mensagem?: string;
+}
+
 const ENDPOINT = '/api/livros';
 
 export const livroService = {
-  getAll: async (): Promise<Livro[]> => {
+  getAll: async (): Promise<{ livros: Livro[]; total?: number }> => {
     const response = await api.get(ENDPOINT);
     // Verificar se a resposta está no formato { sucesso, data } ou apenas os dados diretos
     const livros = response.data.data || response.data;
+    const total = response.data.total;
     
-    return livros;
+    return { livros, total };
   },
 
   getById: async (id: string): Promise<Livro> => {
@@ -32,13 +40,17 @@ export const livroService = {
   },
   
   // Métodos específicos para livros
-  getByCategoriaId: async (categoriaId: string): Promise<Livro[]> => {
+  getByCategoriaId: async (categoriaId: string): Promise<{ livros: Livro[]; total?: number }> => {
     const response = await api.get(`/api/categorias/${categoriaId}/livros`);
-    return response.data.data || response.data;
+    const livros = response.data.data || response.data;
+    const total = response.data.total;
+    return { livros, total };
   },
   
-  pesquisar: async (termo: string): Promise<Livro[]> => {
+  pesquisar: async (termo: string): Promise<{ livros: Livro[]; total?: number }> => {
     const response = await api.get(`${ENDPOINT}/busca`, { params: { q: termo } });
-    return response.data.data || response.data;
+    const livros = response.data.data || response.data;
+    const total = response.data.total;
+    return { livros, total };
   }
 };

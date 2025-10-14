@@ -178,11 +178,12 @@ const ActionButtonContainer = styled.div`
 
 const DashboardPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { livros, isLoading: livrosLoading } = useSelector((state: RootState) => state.livros);
+  const { livros, total: livrosTotal, isLoading: livrosLoading } = useSelector((state: RootState) => state.livros);
   const { categorias, isLoading: categoriasLoading } = useSelector((state: RootState) => state.categorias);
   const { usuarios, isLoading: usuariosLoading } = useSelector((state: RootState) => state.usuarios);
   const { emprestimos, isLoading: emprestimosLoading } = useSelector((state: RootState) => state.emprestimos);
   const { user } = useAuth();
+
   
   const [stats, setStats] = useState({
     livrosTotal: 0,
@@ -256,7 +257,7 @@ const DashboardPage: React.FC = () => {
       
       // Base stats that are always available regardless of user type
       const baseStats = {
-        livrosTotal: Array.isArray(livros) ? livros.length : 0,
+        livrosTotal: livrosTotal || 0,
         livrosDisponiveis: Array.isArray(livros) ? livros.reduce((total, livro) => total + (livro.disponiveis || 0), 0) : 0,
         categoriasTotal: Array.isArray(categorias) ? categorias.length : 0,
         readerBorrowedBooksCount: livrosUnicos.size,
@@ -281,7 +282,7 @@ const DashboardPage: React.FC = () => {
         });
       }
     }
-  }, [livros, categorias, usuarios, emprestimos, livrosLoading, categoriasLoading, usuariosLoading, emprestimosLoading, user?.tipo]);
+  }, [livros, livrosTotal, categorias, usuarios, emprestimos, livrosLoading, categoriasLoading, usuariosLoading, emprestimosLoading, user?.tipo]);
   
   // Ordenar empréstimos mais recentes
   const emprestimosRecentes = Array.isArray(emprestimos) 
@@ -676,7 +677,7 @@ const DashboardPage: React.FC = () => {
             </div>
             
             <div>
-              <SectionTitle>Livros Catalogados</SectionTitle>
+              <SectionTitle>Novos Livros Catalogados</SectionTitle>
               <RecentItemsCard>
                 {livrosLoading ? (
                   <NoItems>Carregando...</NoItems>

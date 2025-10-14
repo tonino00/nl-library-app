@@ -144,7 +144,7 @@ const LivrosListPage: React.FC = () => {
       // Buscar todos os livros para fazer pesquisa local
       dispatch(fetchLivros()).then((action) => {
         if (fetchLivros.fulfilled.match(action)) {
-          const todosLivros = action.payload as Livro[];
+          const todosLivros = action.payload.livros;
           const termoBusca = searchTerm.toLowerCase();
 
           // Filtrar localmente por autor espiritual e outros campos

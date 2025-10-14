@@ -77,6 +77,7 @@ export interface CategoriaState {
 export interface LivroState {
   livros: Livro[];
   livro: Livro | null;
+  total?: number;
   isLoading: boolean;
   error: string | null;
 }
