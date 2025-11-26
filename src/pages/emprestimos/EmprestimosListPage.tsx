@@ -315,7 +315,7 @@ const EmprestimosListPage: React.FC = () => {
         <Button
           as={Link}
           to="/emprestimos/novo"
-          variant="primary"
+          variant="secondary"
           leftIcon={<FiPlus size={16} />}
         >
           Novo Empréstimo

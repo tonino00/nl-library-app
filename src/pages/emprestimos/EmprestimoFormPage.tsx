@@ -10,7 +10,7 @@ import {
   updateEmprestimo 
 } from '../../features/emprestimos/emprestimoSlice';
 import { fetchUsuarios } from '../../features/usuarios/usuarioSlice';
-import { fetchLivros } from '../../features/livros/livroSlice';
+import { fetchLivros, pesquisarLivros } from '../../features/livros/livroSlice';
 import { AppDispatch, RootState } from '../../store';
 import { Emprestimo } from '../../types';
 import Button from '../../components/ui/Button';
@@ -88,6 +88,48 @@ const AlertBox = styled.div<{ variant: 'warning' | 'danger' | 'success' | 'info'
   }}
 `;
 
+const FieldWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+  width: 100%;
+`;
+
+const LivroResultsList = styled.div`
+  margin-top: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  background-color: #fff;
+`;
+
+const LivroResultItem = styled.button`
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.9rem;
+
+  &:hover {
+    background-color: #f5f7fb;
+  }
+`;
+
+const LivroResultTitle = styled.span`
+  font-weight: 500;
+`;
+
+const LivroResultMeta = styled.span`
+  font-size: 0.8rem;
+  color: var(--light-text-color);
+`;
+
 const LoadingContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -119,9 +161,11 @@ const EmprestimoFormPage: React.FC = () => {
   const { usuarios, isLoading: usuariosLoading } = useSelector((state: RootState) => state.usuarios);
   const { livros, isLoading: livrosLoading } = useSelector((state: RootState) => state.livros);
   
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormData>();
+  const { register, handleSubmit, reset, setValue, watch, clearErrors, formState: { errors } } = useForm<FormData>();
   const [submitting, setSubmitting] = useState(false);
   const [selectedLivroId, setSelectedLivroId] = useState<string | null>(null);
+  const [livroSearchTerm, setLivroSearchTerm] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
   
   // Buscar dados necessários
   useEffect(() => {
@@ -181,6 +225,44 @@ const EmprestimoFormPage: React.FC = () => {
   const getLivroSelecionado = () => {
     if (!selectedLivroId || !Array.isArray(livros)) return null;
     return livros.find(livro => livro._id === selectedLivroId);
+  };
+
+  const handleLivroSelectFromSearch = (livroIdSelecionado: string) => {
+    setSelectedLivroId(livroIdSelecionado);
+    setValue('livro', livroIdSelecionado, { shouldValidate: true });
+    const livro = Array.isArray(livros)
+      ? livros.find(l => l._id === livroIdSelecionado)
+      : undefined;
+
+    if (livro) {
+      const label = `${livro.titulo} - ${livro.autor}${livro.autorEspiritual ? ` / ${livro.autorEspiritual}` : ''}`;
+      setLivroSearchTerm(label);
+    }
+
+    clearErrors('livro');
+    setHasSearched(false);
+  };
+
+  const handleLivroSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const term = e.target.value;
+    setLivroSearchTerm(term);
+    if (!term.trim()) {
+      setHasSearched(false);
+    }
+  };
+
+  const handleLivroSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const term = livroSearchTerm.trim();
+      if (term) {
+        dispatch(pesquisarLivros(term));
+        setHasSearched(true);
+      } else {
+        dispatch(fetchLivros());
+        setHasSearched(false);
+      }
+    }
   };
   
   const livroSelecionado = getLivroSelecionado();
@@ -271,21 +353,70 @@ const EmprestimoFormPage: React.FC = () => {
                 fullWidth
                 disabled={isEditMode}
               />
-              
-              <Select
-                label="Livro"
-                {...register('livro', { required: 'O livro é obrigatório' })}
-                error={errors.livro?.message}
-                options={Array.isArray(livros) ? 
-                  livros.map(livro => ({
-                    value: livro._id || '',
-                    label: `${livro.titulo} - ${(livro.disponiveis !== undefined && livro.disponiveis > 0) || isEditMode ? 'Disponível' : 'Indisponível'}`
-                  }))
-                : []}
-                fullWidth
-                onChange={handleLivroChange}
-                disabled={isEditMode}
-              />
+              {isEditMode ? (
+                <Select
+                  label="Livro"
+                  {...register('livro', { required: 'O livro é obrigatório' })}
+                  error={errors.livro?.message}
+                  options={Array.isArray(livros) ? 
+                    livros.map(livro => ({
+                      value: livro._id || '',
+                      label: `${livro.titulo} - ${(livro.disponiveis !== undefined && livro.disponiveis > 0) || isEditMode ? 'Disponível' : 'Indisponível'}`
+                    }))
+                  : []}
+                  fullWidth
+                  onChange={handleLivroChange}
+                  disabled={isEditMode}
+                />
+              ) : (
+                <FieldWrapper>
+                  <Input
+                    label="Buscar livro"
+                    placeholder="Digite título, autor ou autor espiritual"
+                    value={livroSearchTerm}
+                    onChange={handleLivroSearchChange}
+                    onKeyDown={handleLivroSearchKeyDown}
+                    fullWidth
+                  />
+                  <Input
+                    type="hidden"
+                    {...register('livro', { required: 'O livro é obrigatório' })}
+                  />
+                  {errors.livro?.message && (
+                    <span style={{ color: 'var(--danger-color)', fontSize: '12px' }}>
+                      {errors.livro.message}
+                    </span>
+                  )}
+                  {Array.isArray(livros) && livros.length > 0 && hasSearched && livroSearchTerm.trim() && (
+                    <LivroResultsList>
+                      {livros
+                        .filter(livro => {
+                          const termo = livroSearchTerm.trim().toLowerCase();
+                          return (
+                            livro.titulo.toLowerCase().includes(termo) ||
+                            livro.autor.toLowerCase().includes(termo) ||
+                            (livro.autorEspiritual && livro.autorEspiritual.toLowerCase().includes(termo))
+                          );
+                        })
+                        .map(livro => (
+                          <LivroResultItem
+                            key={livro._id}
+                            type="button"
+                            onClick={() => handleLivroSelectFromSearch(livro._id || '')}
+                          >
+                            <LivroResultTitle>{livro.titulo}</LivroResultTitle>
+                            <LivroResultMeta>
+                              {livro.autor}
+                              {livro.autorEspiritual && ` • Autor Espiritual: ${livro.autorEspiritual}`}
+                              {typeof livro.disponiveis === 'number' &&
+                                ` • ${livro.disponiveis > 0 ? 'Disponível' : 'Indisponível'}`}
+                            </LivroResultMeta>
+                          </LivroResultItem>
+                        ))}
+                    </LivroResultsList>
+                  )}
+                </FieldWrapper>
+              )}
             </FormRow>
             
             <FormRow>
