@@ -211,73 +211,86 @@ const DashboardPage: React.FC = () => {
     }
   }, [dispatch, user?.tipo, user?._id]);
   
+  // Atualizar estatísticas relacionadas apenas a livros/categorias assim que esses dados estiverem prontos
   useEffect(() => {
-    // Check if all necessary data is loaded based on user type
-    const isDataLoaded = user?.tipo === 'leitor'
-      ? !livrosLoading && !categoriasLoading && !emprestimosLoading
-      : !livrosLoading && !categoriasLoading && !usuariosLoading && !emprestimosLoading;
-    
-    if (isDataLoaded) {
-      // Calcular empréstimos do leitor atual
-      const emprestimosDoLeitorCalc = Array.isArray(emprestimos) && user
-        ? emprestimos.filter(emp => {
-            if (typeof emp.usuario === 'string') {
-              return emp.usuario === user._id;
-            } else if (emp.usuario && typeof emp.usuario === 'object') {
-              return emp.usuario._id === user._id;
-            }
-            return false;
-          })
-        : [];
+    if (livrosLoading || categoriasLoading) return;
 
-      // Contar livros únicos emprestados pelo leitor (evitar duplicatas)
-      const livrosUnicos = new Set();
-      emprestimosDoLeitorCalc.forEach(emp => {
-        if (typeof emp.livro === 'string') {
-          livrosUnicos.add(emp.livro);
-        } else if (emp.livro && typeof emp.livro === 'object') {
-          livrosUnicos.add(emp.livro._id);
-        }
-      });
+    setStats((prev) => ({
+      ...prev,
+      livrosTotal: livrosTotal || 0,
+      livrosDisponiveis: Array.isArray(livros)
+        ? livros.reduce((total, livro) => total + (livro.disponiveis || 0), 0)
+        : 0,
+      categoriasTotal: Array.isArray(categorias) ? categorias.length : 0,
+    }));
+  }, [livros, livrosTotal, categorias, livrosLoading, categoriasLoading]);
 
-      // Contar empréstimos ativos do leitor (inclui status 'emprestado')
-      const emprestimosAtivosDoLeitor = emprestimosDoLeitorCalc.filter(e =>
-        ['pendente', 'renovado', 'emprestado'].includes((e.status || '') as string)
-      ).length;
-      
-      // Base stats that are always available regardless of user type
-      const baseStats = {
-        livrosTotal: livrosTotal || 0,
-        livrosDisponiveis: Array.isArray(livros) ? livros.reduce((total, livro) => total + (livro.disponiveis || 0), 0) : 0,
-        categoriasTotal: Array.isArray(categorias) ? categorias.length : 0,
+  // Atualizar estatísticas que dependem de empréstimos/usuários separadamente
+  useEffect(() => {
+    const isEmprestimosLoaded = !emprestimosLoading;
+    const isUsuariosLoaded = user?.tipo === 'leitor' ? true : !usuariosLoading;
+
+    if (!isEmprestimosLoaded || !isUsuariosLoaded) return;
+
+    // Calcular empréstimos do leitor atual
+    const emprestimosDoLeitorCalc = Array.isArray(emprestimos) && user
+      ? emprestimos.filter(emp => {
+          if (typeof emp.usuario === 'string') {
+            return emp.usuario === user._id;
+          } else if (emp.usuario && typeof emp.usuario === 'object') {
+            return emp.usuario._id === user._id;
+          }
+          return false;
+        })
+      : [];
+
+    // Contar livros únicos emprestados pelo leitor (evitar duplicatas)
+    const livrosUnicos = new Set();
+    emprestimosDoLeitorCalc.forEach(emp => {
+      if (typeof emp.livro === 'string') {
+        livrosUnicos.add(emp.livro);
+      } else if (emp.livro && typeof emp.livro === 'object') {
+        livrosUnicos.add(emp.livro._id);
+      }
+    });
+
+    // Contar empréstimos ativos do leitor (inclui status 'emprestado')
+    const emprestimosAtivosDoLeitor = emprestimosDoLeitorCalc.filter(e =>
+      ['pendente', 'renovado', 'emprestado'].includes((e.status || '') as string)
+    ).length;
+
+    setStats((prev) => {
+      const updated = {
+        ...prev,
         readerBorrowedBooksCount: livrosUnicos.size,
-        readerActiveLoansCount: emprestimosAtivosDoLeitor
+        readerActiveLoansCount: emprestimosAtivosDoLeitor,
       };
-      
-      // For admin users, add admin-specific stats
+
       if (user?.tipo !== 'leitor') {
-        setStats({
-          ...baseStats,
-          // Empréstimos ativos: pendentes, renovados ou emprestados
+        return {
+          ...updated,
           emprestimosAtivos: Array.isArray(emprestimos)
             ? emprestimos.filter(e =>
                 ['pendente', 'renovado', 'emprestado'].includes((e.status || '') as string)
               ).length
             : 0,
-          emprestimosAtrasados: Array.isArray(emprestimos) ? emprestimos.filter(e => e.status === 'atrasado').length : 0,
-          usuariosAtivos: Array.isArray(usuarios) ? usuarios.filter(u => u.ativo).length : 0,
-        });
-      } else {
-        // For reader users, set default values for admin-specific stats
-        setStats({
-          ...baseStats,
-          emprestimosAtivos: 0,
-          emprestimosAtrasados: 0,
-          usuariosAtivos: 0,
-        });
+          emprestimosAtrasados: Array.isArray(emprestimos)
+            ? emprestimos.filter(e => e.status === 'atrasado').length
+            : 0,
+          usuariosAtivos: Array.isArray(usuarios)
+            ? usuarios.filter(u => u.ativo).length
+            : 0,
+        };
       }
-    }
-  }, [livros, livrosTotal, categorias, usuarios, emprestimos, livrosLoading, categoriasLoading, usuariosLoading, emprestimosLoading, user?.tipo]);
+
+      return {
+        ...updated,
+        emprestimosAtivos: 0,
+        emprestimosAtrasados: 0,
+        usuariosAtivos: 0,
+      };
+    });
+  }, [emprestimos, usuarios, emprestimosLoading, usuariosLoading, user?.tipo, user?._id]);
   
   // Ordenar empréstimos mais recentes
   const emprestimosRecentes = Array.isArray(emprestimos) 
