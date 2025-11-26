@@ -184,7 +184,6 @@ const DashboardPage: React.FC = () => {
   const { emprestimos, isLoading: emprestimosLoading } = useSelector((state: RootState) => state.emprestimos);
   const { user } = useAuth();
 
-  
   const [stats, setStats] = useState({
     livrosTotal: 0,
     livrosDisponiveis: 0,
@@ -196,28 +195,19 @@ const DashboardPage: React.FC = () => {
     readerBorrowedBooksCount: 0,
     readerActiveLoansCount: 0
   });
-  
-  // Ref para controlar se já carregamos os dados
-  const dataFetchedRef = React.useRef(false);
 
   useEffect(() => {
-    // Apenas busque os dados se eles ainda não foram carregados
-    if (!dataFetchedRef.current) {
-      // Always fetch books and categories for all users
-      dispatch(fetchLivros());
-      dispatch(fetchCategorias());
-      
-      if (user?.tipo === 'leitor' && user?._id) {
-        // For readers, only fetch their own emprestimos
-        dispatch(fetchEmprestimosByUsuario(user._id));
-      } else if (user?.tipo !== 'leitor') {
-        // For admins, fetch all users and emprestimos
-        dispatch(fetchUsuarios());
-        dispatch(fetchEmprestimos());
-      }
-      
-      // Marcar que os dados foram carregados
-      dataFetchedRef.current = true;
+    // Sempre buscar livros e categorias
+    dispatch(fetchLivros());
+    dispatch(fetchCategorias());
+
+    if (user?.tipo === 'leitor' && user?._id) {
+      // Leitor: buscar apenas empréstimos do próprio usuário
+      dispatch(fetchEmprestimosByUsuario(user._id));
+    } else if (user?.tipo !== 'leitor') {
+      // Admin/outros: buscar todos os usuários e todos os empréstimos
+      dispatch(fetchUsuarios());
+      dispatch(fetchEmprestimos());
     }
   }, [dispatch, user?.tipo, user?._id]);
   
@@ -250,9 +240,9 @@ const DashboardPage: React.FC = () => {
         }
       });
 
-      // Contar empréstimos ativos do leitor
-      const emprestimosAtivosDoLeitor = emprestimosDoLeitorCalc.filter(
-        e => e.status === 'pendente' || e.status === 'renovado'
+      // Contar empréstimos ativos do leitor (inclui status 'emprestado')
+      const emprestimosAtivosDoLeitor = emprestimosDoLeitorCalc.filter(e =>
+        ['pendente', 'renovado', 'emprestado'].includes((e.status || '') as string)
       ).length;
       
       // Base stats that are always available regardless of user type
@@ -268,7 +258,12 @@ const DashboardPage: React.FC = () => {
       if (user?.tipo !== 'leitor') {
         setStats({
           ...baseStats,
-          emprestimosAtivos: Array.isArray(emprestimos) ? emprestimos.filter(e => e.status === 'pendente' || e.status === 'renovado').length : 0,
+          // Empréstimos ativos: pendentes, renovados ou emprestados
+          emprestimosAtivos: Array.isArray(emprestimos)
+            ? emprestimos.filter(e =>
+                ['pendente', 'renovado', 'emprestado'].includes((e.status || '') as string)
+              ).length
+            : 0,
           emprestimosAtrasados: Array.isArray(emprestimos) ? emprestimos.filter(e => e.status === 'atrasado').length : 0,
           usuariosAtivos: Array.isArray(usuarios) ? usuarios.filter(u => u.ativo).length : 0,
         });
