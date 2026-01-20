@@ -151,10 +151,6 @@ const UsuariosListPage: React.FC = () => {
     }
   };
 
-  const formatDate = (date?: Date) => {
-    if (!date) return "-";
-    return new Date(date).toLocaleDateString("pt-BR");
-  };
 
   const columns: Column<Usuario>[] = [
     {

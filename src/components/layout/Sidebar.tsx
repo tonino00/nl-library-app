@@ -11,7 +11,6 @@ import {
   FiUsers, 
   FiRepeat, 
   FiSettings,
-  FiBarChart2,
   FiLogOut
 } from 'react-icons/fi';
 
@@ -133,10 +132,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     (typeof userType === 'string' && userType.toLowerCase() === 'admin')
   );
   
-  const isLeitor = !!user && (
-    userType === 'leitor' || 
-    (typeof userType === 'string' && userType.toLowerCase() === 'leitor')
-  );
   
   const handleLogout = () => {
     dispatch(logout());

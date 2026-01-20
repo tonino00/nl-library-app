@@ -1,10 +1,9 @@
 import React from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { logout } from "../../features/auth/authSlice";
-import { RootState, AppDispatch } from "../../store";
-import { FiMenu, FiX, FiLogOut, FiUser } from "../../utils/iconFix";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store";
+import { FiMenu, FiX, FiUser } from "../../utils/iconFix";
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -81,29 +80,6 @@ const Avatar = styled.div`
   font-weight: 600;
 `;
 
-const LogoutButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background-color: #f8d7da;
-  color: #dc3545;
-  border: 1px solid #dc3545;
-  border-radius: 4px;
-  padding: 6px 12px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background-color: #dc3545;
-    color: white;
-  }
-
-  span {
-    display: inline-block;
-  }
-`;
 
 const AvatarPlaceholder = styled.div`
   width: 30px;
@@ -128,12 +104,8 @@ const ImagePreviewContainer = styled.div`
 
 // Usamos React.FC<HeaderProps> para tipar corretamente os props
 const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
-  const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
 
-  const handleLogout = () => {
-    dispatch(logout());
-  };
 
   return (
     <HeaderContainer>

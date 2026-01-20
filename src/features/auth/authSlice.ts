@@ -7,10 +7,6 @@ interface LoginCredentials {
   senha: string;
 }
 
-interface LoginResponse {
-  user: Usuario;
-  token: string;
-}
 
 // Estado inicial
 const initialState: AuthState = {

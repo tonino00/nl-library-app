@@ -2,14 +2,12 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useLocation } from "react-router-dom";
 import styled from "styled-components";
-import { FiPlus, FiEdit2, FiTrash2, FiEye, FiFilter } from "react-icons/fi";
+import { FiPlus, FiEdit2, FiTrash2, FiEye } from "react-icons/fi";
 import {
   fetchLivros,
   deleteLivro,
   fetchLivrosByCategoria,
   pesquisarLivros,
-  invalidateCache,
-  resetLivrosState,
 } from "../../features/livros/livroSlice";
 import { fetchCategorias } from "../../features/categorias/categoriaSlice";
 import { AppDispatch, RootState } from "../../store";

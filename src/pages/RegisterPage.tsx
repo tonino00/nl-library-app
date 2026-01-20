@@ -6,7 +6,6 @@ import { FiUser, FiLock, FiMail, FiPhone, FiFileText, FiUserPlus, FiShield } fro
 import { register } from '../features/auth/authSlice';
 import { AppDispatch } from '../store';
 import { Usuario } from '../types';
-import api from '../services/api';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { toast } from 'react-toastify';

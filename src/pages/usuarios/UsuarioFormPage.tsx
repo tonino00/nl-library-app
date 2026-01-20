@@ -91,7 +91,7 @@ const UsuarioFormPage: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const isAdmin = user?.tipo === 'admin';
   
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<UsuarioFormData>();
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<UsuarioFormData>();
   const [submitting, setSubmitting] = useState(false);
   
   const fotoUrl = watch('foto');

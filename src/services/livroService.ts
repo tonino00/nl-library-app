@@ -1,12 +1,6 @@
 import api from './api';
 import { Livro } from '../types';
 
-interface ApiResponse {
-  data: Livro[] | Livro;
-  total?: number;
-  sucesso?: boolean;
-  mensagem?: string;
-}
 
 const ENDPOINT = '/api/livros';
 

@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import styled from 'styled-components';
-import { FiBook, FiUsers, FiRepeat, FiAlertTriangle, FiFolder } from 'react-icons/fi';
+import { FiBook, FiUsers, FiRepeat, FiAlertTriangle } from 'react-icons/fi';
 import { fetchLivros } from '../features/livros/livroSlice';
 import { fetchCategorias } from '../features/categorias/categoriaSlice';
 import { fetchEmprestimos, fetchEmprestimosByUsuario } from '../features/emprestimos/emprestimoSlice';
@@ -16,11 +16,6 @@ const DashboardContainer = styled.div`
   padding: 20px 0;
 `;
 
-const PageTitle = styled.h1`
-  font-size: 2rem;
-  color: var(--text-color);
-  margin-bottom: 20px;
-`;
 
 const StatsGrid = styled.div`
   display: grid;
@@ -290,7 +285,7 @@ const DashboardPage: React.FC = () => {
         usuariosAtivos: 0,
       };
     });
-  }, [emprestimos, usuarios, emprestimosLoading, usuariosLoading, user?.tipo, user?._id]);
+  }, [emprestimos, usuarios, emprestimosLoading, usuariosLoading, user]);
   
   // Ordenar empréstimos mais recentes
   const emprestimosRecentes = Array.isArray(emprestimos) 

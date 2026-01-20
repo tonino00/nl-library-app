@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 import { fetchLivros, pesquisarLivros } from '../features/livros/livroSlice';
 import { fetchCategorias } from '../features/categorias/categoriaSlice';
 import { AppDispatch, RootState } from '../store';
-import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { toast } from 'react-toastify';
@@ -51,8 +50,8 @@ const FormRow = styled.div`
 
 const ApiTest: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { livros, isLoading: livrosLoading, error: livrosError } = useSelector((state: RootState) => state.livros);
-  const { categorias, isLoading: categoriasLoading, error: categoriasError } = useSelector((state: RootState) => state.categorias);
+  const { livros, isLoading: livrosLoading } = useSelector((state: RootState) => state.livros);
+  const { categorias, isLoading: categoriasLoading } = useSelector((state: RootState) => state.categorias);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [results, setResults] = useState<any>(null);

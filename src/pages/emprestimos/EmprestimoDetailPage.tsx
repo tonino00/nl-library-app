@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
-import { FiArrowLeft, FiEdit2, FiCalendar, FiCheck, FiRepeat, FiAlertTriangle, FiBook, FiUser } from 'react-icons/fi';
+import { FiArrowLeft, FiEdit2, FiCalendar, FiCheck, FiRepeat, FiAlertTriangle } from 'react-icons/fi';
 import { 
   fetchEmprestimoById, 
   finalizarEmprestimo, 

@@ -161,7 +161,7 @@ const EmprestimoFormPage: React.FC = () => {
   const { usuarios, isLoading: usuariosLoading } = useSelector((state: RootState) => state.usuarios);
   const { livros, isLoading: livrosLoading } = useSelector((state: RootState) => state.livros);
   
-  const { register, handleSubmit, reset, setValue, watch, clearErrors, formState: { errors } } = useForm<FormData>();
+  const { register, handleSubmit, reset, setValue, clearErrors, formState: { errors } } = useForm<FormData>();
   const [submitting, setSubmitting] = useState(false);
   const [selectedLivroId, setSelectedLivroId] = useState<string | null>(null);
   const [livroSearchTerm, setLivroSearchTerm] = useState('');

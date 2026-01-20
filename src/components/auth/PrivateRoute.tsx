@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import styled from 'styled-components';
 
-type UserRole = 'admin' | 'leitor' | 'comunidade';
 
 interface PrivateRouteProps {
   children: React.ReactNode;

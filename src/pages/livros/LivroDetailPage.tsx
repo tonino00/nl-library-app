@@ -7,8 +7,6 @@ import {
   FiEdit2,
   FiCalendar,
   FiTag,
-  FiMapPin,
-  FiRepeat,
 } from "react-icons/fi";
 import { fetchLivroById } from "../../features/livros/livroSlice";
 import { fetchEmprestimosByLivro } from "../../features/emprestimos/emprestimoSlice";
@@ -17,7 +15,6 @@ import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import Table, { Column } from "../../components/ui/Table";
 import { Emprestimo } from "../../types";
-import { toast } from "react-toastify";
 
 const PageHeader = styled.div`
   display: flex;

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import styled from 'styled-components';
-import { FiSave, FiArrowLeft, FiImage } from 'react-icons/fi';
+import { FiSave, FiArrowLeft } from 'react-icons/fi';
 import { 
   fetchLivroById, 
   createLivro, 
@@ -61,18 +61,6 @@ const ImagePreview = styled.img`
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 `;
 
-const PlaceholderImage = styled.div`
-  width: 200px;
-  height: 300px;
-  border-radius: 8px;
-  background-color: #f0f0f0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #666;
-  font-size: 3rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-`;
 
 const LoadingContainer = styled.div`
   display: flex;
@@ -90,7 +78,7 @@ const LivroFormPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { livro, isLoading: livroLoading } = useSelector((state: RootState) => state.livros);
   const { categorias, isLoading: categoriasLoading } = useSelector((state: RootState) => state.categorias);
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<Livro>();
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<Livro>();
   const [submitting, setSubmitting] = useState(false);
   
   const capaUrl = watch('capa');

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { FiLock, FiKey } from 'react-icons/fi';
-import { authService } from '../services/authService';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { toast } from 'react-toastify';

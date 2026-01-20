@@ -167,7 +167,7 @@ function Table<T>({
     if (paginated) {
       setCurrentPage(1);
     }
-  }, [data]);
+  }, [data, paginated]);
   
   // Calcular dados paginados
   const totalItems = data.length;

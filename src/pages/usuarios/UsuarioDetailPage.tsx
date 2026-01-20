@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
-import { FiArrowLeft, FiEdit2, FiMail, FiPhone, FiCalendar, FiMapPin, FiUser, FiFileText } from 'react-icons/fi';
+import { FiArrowLeft, FiEdit2, FiMail, FiPhone, FiCalendar, FiMapPin, FiFileText } from 'react-icons/fi';
 import { fetchUsuarioById } from '../../features/usuarios/usuarioSlice';
 import { fetchEmprestimosByUsuario } from '../../features/emprestimos/emprestimoSlice';
 import { AppDispatch, RootState } from '../../store';
