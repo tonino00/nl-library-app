@@ -12,12 +12,43 @@ const ENDPOINT = '/api/livros';
 
 export const livroService = {
   getAll: async (): Promise<{ livros: Livro[]; total?: number }> => {
-    const response = await api.get(ENDPOINT);
-    // Verificar se a resposta está no formato { sucesso, data } ou apenas os dados diretos
-    const livros = response.data.data || response.data;
-    const total = response.data.total;
+    let allLivros: Livro[] = [];
+    let page = 1;
+    let hasMore = true;
     
-    return { livros, total };
+    while (hasMore) {
+      try {
+        // Fazer requisição com parâmetros de paginação
+        const response = await api.get(`${ENDPOINT}?page=${page}&limit=100`);
+        
+        // Verificar se a resposta está no formato { sucesso, data } ou apenas os dados diretos
+        const livros = response.data.data || response.data;
+        
+        if (Array.isArray(livros) && livros.length > 0) {
+          allLivros = [...allLivros, ...livros];
+          
+          // Se retornou menos que 100, provavelmente é a última página
+          if (livros.length < 100) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        } else {
+          hasMore = false;
+        }
+      } catch (error) {
+        // Se der erro na paginação, tenta buscar sem parâmetros (fallback)
+        if (page === 1) {
+          const response = await api.get(ENDPOINT);
+          const livros = response.data.data || response.data;
+          const total = response.data.total;
+          return { livros: Array.isArray(livros) ? livros : [], total };
+        }
+        hasMore = false;
+      }
+    }
+    
+    return { livros: allLivros, total: allLivros.length };
   },
 
   getById: async (id: string): Promise<Livro> => {

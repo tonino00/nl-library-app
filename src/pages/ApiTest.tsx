@@ -61,7 +61,7 @@ const ApiTest: React.FC = () => {
   const testGetLivros = async () => {
     try {
       setApiError(null);
-      await dispatch(fetchLivros()).unwrap();
+      await dispatch(fetchLivros(false)).unwrap();
       setResults(livros);
       toast.success('API de Livros testada com sucesso!');
     } catch (error: any) {

@@ -170,7 +170,7 @@ const EmprestimoFormPage: React.FC = () => {
   // Buscar dados necessários
   useEffect(() => {
     dispatch(fetchUsuarios());
-    dispatch(fetchLivros());
+    dispatch(fetchLivros(false));
     
     if (isEditMode && id) {
       dispatch(fetchEmprestimoById(id));
@@ -259,7 +259,7 @@ const EmprestimoFormPage: React.FC = () => {
         dispatch(pesquisarLivros(term));
         setHasSearched(true);
       } else {
-        dispatch(fetchLivros());
+        dispatch(fetchLivros(false));
         setHasSearched(false);
       }
     }

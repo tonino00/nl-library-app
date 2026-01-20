@@ -80,6 +80,8 @@ export interface LivroState {
   total?: number;
   isLoading: boolean;
   error: string | null;
+  lastFetched: string | null;
+  isDataLoaded: boolean;
 }
 
 export interface UsuarioState {

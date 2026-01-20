@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { livroService } from '../../services/livroService';
 import { Livro, LivroState } from '../../types';
+import { logout } from '../auth/authSlice';
 
 // Estado inicial
 const initialState: LivroState = {
@@ -9,14 +10,24 @@ const initialState: LivroState = {
   total: 0,
   isLoading: false,
   error: null,
+  lastFetched: null,
+  isDataLoaded: false,
 };
 
 // Async thunks
 export const fetchLivros = createAsyncThunk(
   'livros/fetchAll',
-  async (_, { rejectWithValue }) => {
+  async (forceRefresh: boolean = false, { getState, rejectWithValue }) => {
     try {
-      return await livroService.getAll();
+      const state = getState() as { livros: LivroState };
+      
+      // Se os dados já foram carregados e não é um refresh forçado, não faz nova requisição
+      if (state.livros.isDataLoaded && !forceRefresh) {
+        return { livros: state.livros.livros, total: state.livros.total, fromCache: true };
+      }
+      
+      const result = await livroService.getAll();
+      return { ...result, fromCache: false };
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Erro ao buscar livros');
     }
@@ -101,6 +112,17 @@ const livroSlice = createSlice({
     setSelectedLivro: (state, action: PayloadAction<Livro | null>) => {
       state.livro = action.payload;
     },
+    invalidateCache: (state) => {
+      state.isDataLoaded = false;
+      state.lastFetched = null;
+    },
+    resetLivrosState: (state) => {
+      state.livros = [];
+      state.total = 0;
+      state.isDataLoaded = false;
+      state.lastFetched = null;
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -109,10 +131,14 @@ const livroSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(fetchLivros.fulfilled, (state, action: PayloadAction<{ livros: Livro[]; total?: number }>) => {
+      .addCase(fetchLivros.fulfilled, (state, action: PayloadAction<{ livros: Livro[]; total?: number; fromCache?: boolean }>) => {
         state.isLoading = false;
-        state.livros = action.payload.livros;
-        state.total = action.payload.total || action.payload.livros.length;
+        if (!action.payload.fromCache) {
+          state.livros = action.payload.livros;
+          state.total = action.payload.total || action.payload.livros.length;
+          state.lastFetched = new Date().toISOString();
+          state.isDataLoaded = true;
+        }
       })
       .addCase(fetchLivros.rejected, (state, action) => {
         state.isLoading = false;
@@ -141,6 +167,7 @@ const livroSlice = createSlice({
       .addCase(createLivro.fulfilled, (state, action: PayloadAction<Livro>) => {
         state.isLoading = false;
         state.livros.push(action.payload);
+        state.total = state.livros.length;
       })
       .addCase(createLivro.rejected, (state, action) => {
         state.isLoading = false;
@@ -172,6 +199,7 @@ const livroSlice = createSlice({
       .addCase(deleteLivro.fulfilled, (state, action: PayloadAction<string>) => {
         state.isLoading = false;
         state.livros = state.livros.filter(livro => livro._id !== action.payload);
+        state.total = state.livros.length;
         if (state.livro && state.livro._id === action.payload) {
           state.livro = null;
         }
@@ -209,9 +237,18 @@ const livroSlice = createSlice({
       .addCase(pesquisarLivros.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
+      })
+      
+      // Invalidar cache quando usuário fizer logout
+      .addCase(logout.fulfilled, (state) => {
+        state.livros = [];
+        state.total = 0;
+        state.isDataLoaded = false;
+        state.lastFetched = null;
+        state.error = null;
       });
   },
 });
 
-export const { clearLivroError, setSelectedLivro } = livroSlice.actions;
+export const { clearLivroError, setSelectedLivro, invalidateCache, resetLivrosState } = livroSlice.actions;
 export default livroSlice.reducer;

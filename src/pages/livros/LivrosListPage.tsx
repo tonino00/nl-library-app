@@ -8,6 +8,8 @@ import {
   deleteLivro,
   fetchLivrosByCategoria,
   pesquisarLivros,
+  invalidateCache,
+  resetLivrosState,
 } from "../../features/livros/livroSlice";
 import { fetchCategorias } from "../../features/categorias/categoriaSlice";
 import { AppDispatch, RootState } from "../../store";
@@ -86,7 +88,7 @@ const AvailabilityStatus = styled.span<{ $available: boolean }>`
 
 const LivrosListPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { livros, isLoading } = useSelector((state: RootState) => state.livros);
+  const { livros, isLoading, isDataLoaded } = useSelector((state: RootState) => state.livros);
   const { categorias } = useSelector((state: RootState) => state.categorias);
   const { user } = useSelector((state: RootState) => state.auth);
   const location = useLocation();
@@ -103,15 +105,17 @@ const LivrosListPage: React.FC = () => {
     // Verificar se precisamos forçar uma atualização dos dados
     const forceRefresh = location.state && (location.state as any).forceRefresh;
 
-    // Buscar livros ao carregar o componente ou quando forceRefresh for true
-    dispatch(fetchLivros());
+    // Buscar livros apenas se não foram carregados ainda ou se forceRefresh for true
+    if (!isDataLoaded || forceRefresh) {
+      dispatch(fetchLivros(forceRefresh || false));
+    }
     dispatch(fetchCategorias());
 
     // Limpar o state de navegação para evitar atualizações desnecessárias
     if (forceRefresh && window.history) {
       window.history.replaceState({}, "", location.pathname);
     }
-  }, [dispatch, location]);
+  }, [dispatch, location, isDataLoaded]);
 
   useEffect(() => {
     // Se uma categoria estiver selecionada e não for 'todas'
@@ -120,7 +124,7 @@ const LivrosListPage: React.FC = () => {
     } else if (searchTerm) {
       dispatch(pesquisarLivros(searchTerm));
     } else {
-      dispatch(fetchLivros());
+      dispatch(fetchLivros(false));
     }
   }, [selectedCategoria, dispatch, searchTerm]);
 
@@ -142,7 +146,7 @@ const LivrosListPage: React.FC = () => {
     // em campos que a API não está considerando, como autorEspiritual
     if (searchTerm && livros.length === 0) {
       // Buscar todos os livros para fazer pesquisa local
-      dispatch(fetchLivros()).then((action) => {
+      dispatch(fetchLivros(false)).then((action) => {
         if (fetchLivros.fulfilled.match(action)) {
           const todosLivros = action.payload.livros;
           const termoBusca = searchTerm.toLowerCase();
@@ -175,7 +179,7 @@ const LivrosListPage: React.FC = () => {
 
       // A lógica de fallback para pesquisa local está no useEffect que monitora livros e searchTerm
     } else {
-      dispatch(fetchLivros());
+      dispatch(fetchLivros(false));
     }
   };
 

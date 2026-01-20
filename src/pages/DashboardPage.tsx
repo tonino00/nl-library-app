@@ -198,7 +198,7 @@ const DashboardPage: React.FC = () => {
 
   useEffect(() => {
     // Sempre buscar livros e categorias
-    dispatch(fetchLivros());
+    dispatch(fetchLivros(false));
     dispatch(fetchCategorias());
 
     if (user?.tipo === 'leitor' && user?._id) {
