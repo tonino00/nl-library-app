@@ -5,11 +5,42 @@ const ENDPOINT = '/api/usuarios';
 
 export const usuarioService = {
   getAll: async (): Promise<Usuario[]> => {
-    const response = await api.get(ENDPOINT);
-    // Verificar se a resposta está no formato { sucesso, data } ou apenas os dados diretos
-    const usuarios = response.data.data || response.data;
+    let allUsuarios: Usuario[] = [];
+    let page = 1;
+    let hasMore = true;
     
-    return usuarios;
+    while (hasMore) {
+      try {
+        // Fazer requisição com parâmetros de paginação
+        const response = await api.get(`${ENDPOINT}?page=${page}&limit=100`);
+        
+        // Verificar se a resposta está no formato { sucesso, data } ou apenas os dados diretos
+        const usuarios = response.data.data || response.data;
+        
+        if (Array.isArray(usuarios) && usuarios.length > 0) {
+          allUsuarios = [...allUsuarios, ...usuarios];
+          
+          // Se retornou menos que 100, provavelmente é a última página
+          if (usuarios.length < 100) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        } else {
+          hasMore = false;
+        }
+      } catch (error) {
+        // Se der erro na paginação, tenta buscar sem parâmetros (fallback)
+        if (page === 1) {
+          const response = await api.get(ENDPOINT);
+          const usuarios = response.data.data || response.data;
+          return Array.isArray(usuarios) ? usuarios : [];
+        }
+        hasMore = false;
+      }
+    }
+    
+    return allUsuarios;
   },
 
   getById: async (id: string): Promise<Usuario> => {
