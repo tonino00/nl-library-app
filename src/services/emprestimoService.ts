@@ -5,11 +5,42 @@ const ENDPOINT = '/api/emprestimos';
 
 export const emprestimoService = {
   getAll: async (): Promise<Emprestimo[]> => {
-    const response = await api.get(ENDPOINT);
-    // Verificar se a resposta está no formato { sucesso, data } ou apenas os dados diretos
-    const emprestimos = response.data.data || response.data;
+    let allEmprestimos: Emprestimo[] = [];
+    let page = 1;
+    let hasMore = true;
     
-    return emprestimos;
+    while (hasMore) {
+      try {
+        // Fazer requisição com parâmetros de paginação
+        const response = await api.get(`${ENDPOINT}?page=${page}&limit=100`);
+        
+        // Verificar se a resposta está no formato { sucesso, data } ou apenas os dados diretos
+        const emprestimos = response.data.data || response.data;
+        
+        if (Array.isArray(emprestimos) && emprestimos.length > 0) {
+          allEmprestimos = [...allEmprestimos, ...emprestimos];
+          
+          // Se retornou menos que 100, provavelmente é a última página
+          if (emprestimos.length < 100) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        } else {
+          hasMore = false;
+        }
+      } catch (error) {
+        // Se der erro na paginação, tenta buscar sem parâmetros (fallback)
+        if (page === 1) {
+          const response = await api.get(ENDPOINT);
+          const emprestimos = response.data.data || response.data;
+          return Array.isArray(emprestimos) ? emprestimos : [];
+        }
+        hasMore = false;
+      }
+    }
+    
+    return allEmprestimos;
   },
 
   getById: async (id: string): Promise<Emprestimo> => {
