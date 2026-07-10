@@ -22,6 +22,7 @@ export const GlobalStyles = createGlobalStyle`
     --border-color: #DEE2E6;
     --hover-bg: #f1f3f5;
     --active-bg: #e8eef5;
+    --disabled-bg: #f5f5f5;
 
     /* Status tokens - text colors chosen for WCAG AA contrast on tinted backgrounds */
     --status-pending-bg: rgba(255, 193, 7, 0.18);
@@ -133,6 +134,7 @@ export const GlobalStyles = createGlobalStyle`
       --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
       --hover-bg: #2a2a2a;
       --active-bg: #2e3a4a;
+      --disabled-bg: #2a2a2a;
 
       --status-pending-bg: #3d2e05;
       --status-pending-text: #ffe066;
