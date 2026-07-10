@@ -22,6 +22,12 @@ const Content = styled.main<ContentProps>`
   background-color: var(--background-color);
   min-height: calc(100vh - 64px);
   margin-top: 64px;
+
+  @media (max-width: 768px) {
+    margin-left: 0;
+    padding: 16px;
+    transition: none;
+  }
 `;
 
 const Layout: React.FC = () => {

@@ -23,7 +23,7 @@ const getButtonStyles = (variant: ButtonVariant) => {
         background-color: var(--primary-color);
         color: white;
         &:hover:not(:disabled) {
-          background-color: var(--secondary-color);
+          background-color: var(--primary-hover-color);
         }
       `;
     case 'secondary':
@@ -31,7 +31,7 @@ const getButtonStyles = (variant: ButtonVariant) => {
         background-color: var(--secondary-color);
         color: white;
         &:hover:not(:disabled) {
-          background-color: #4a7ca9;
+          background-color: var(--secondary-hover-color);
         }
       `;
     case 'success':
@@ -39,7 +39,7 @@ const getButtonStyles = (variant: ButtonVariant) => {
         background-color: var(--success-color);
         color: white;
         &:hover:not(:disabled) {
-          background-color: #218838;
+          background-color: var(--success-hover-color);
         }
       `;
     case 'danger':
@@ -47,7 +47,7 @@ const getButtonStyles = (variant: ButtonVariant) => {
         background-color: var(--danger-color);
         color: white;
         &:hover:not(:disabled) {
-          background-color: #c82333;
+          background-color: var(--danger-hover-color);
         }
       `;
     case 'warning':
@@ -55,7 +55,7 @@ const getButtonStyles = (variant: ButtonVariant) => {
         background-color: var(--warning-color);
         color: var(--text-color);
         &:hover:not(:disabled) {
-          background-color: #e0a800;
+          background-color: var(--warning-hover-color);
         }
       `;
     case 'info':
@@ -63,7 +63,7 @@ const getButtonStyles = (variant: ButtonVariant) => {
         background-color: var(--info-color);
         color: white;
         &:hover:not(:disabled) {
-          background-color: #138496;
+          background-color: var(--info-hover-color);
         }
       `;
     case 'outline':
@@ -143,7 +143,16 @@ const StyledButton = styled.button<{
     opacity: 0.7;
     cursor: not-allowed;
   }
-  
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
   svg {
     vertical-align: middle;
   }
@@ -192,13 +201,16 @@ const Button: React.FC<ButtonProps> = ({
   // Preparando props adicionais se o componente for um Link
   const linkProps = to && Component === Link ? { to } : {};
   
+  const isLink = Component === Link;
+
   return (
     <StyledButton
       as={Component}
       $variant={variant}
       $size={size}
       $fullWidth={fullWidth}
-      disabled={disabled || isLoading}
+      disabled={!isLink && (disabled || isLoading)}
+      aria-disabled={isLink ? disabled || isLoading : undefined}
       {...domProps}
       {...linkProps}
     >
