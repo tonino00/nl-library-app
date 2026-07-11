@@ -23,6 +23,12 @@ export const GlobalStyles = createGlobalStyle`
     --hover-bg: #f1f3f5;
     --active-bg: #e8eef5;
     --disabled-bg: #f5f5f5;
+    --table-header-bg: #f8f9fa;
+    --table-striped-bg: rgba(0, 0, 0, 0.02);
+    --table-hover-bg: rgba(46, 90, 136, 0.05);
+    --pagination-bg: #f8f9fa;
+    --pagination-button-bg: #ffffff;
+    --pagination-button-hover-bg: #f0f0f0;
 
     /* Status tokens - text colors chosen for WCAG AA contrast on tinted backgrounds */
     --status-pending-bg: rgba(255, 193, 7, 0.18);
@@ -135,6 +141,12 @@ export const GlobalStyles = createGlobalStyle`
       --hover-bg: #2a2a2a;
       --active-bg: #2e3a4a;
       --disabled-bg: #2a2a2a;
+      --table-header-bg: #2a2a2a;
+      --table-striped-bg: rgba(255, 255, 255, 0.03);
+      --table-hover-bg: rgba(95, 140, 175, 0.15);
+      --pagination-bg: #2a2a2a;
+      --pagination-button-bg: #1e1e1e;
+      --pagination-button-hover-bg: #333333;
 
       --status-pending-bg: #3d2e05;
       --status-pending-text: #ffe066;

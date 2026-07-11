@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 import { FiArrowLeft, FiEdit2, FiMail, FiPhone, FiCalendar, FiMapPin, FiFileText } from 'react-icons/fi';
@@ -16,6 +16,7 @@ const PageHeader = styled.div`
   align-items: center;
   margin-bottom: 20px;
   gap: 15px;
+  flex-wrap: wrap;
 `;
 
 const BackButton = styled(Button)`
@@ -38,17 +39,17 @@ const UserDetailsContainer = styled.div`
   }
 `;
 
-const Avatar = styled.div<{ url?: string }>`
+const Avatar = styled.div<{ $url?: string }>`
   width: 100%;
   max-width: 250px;
   height: 250px;
   border-radius: var(--border-radius);
-  background-color: ${({ url }) => (url ? 'transparent' : 'var(--primary-color)')};
-  background-image: ${({ url }) => (url ? `url(${url})` : 'none')};
+  background-color: ${({ $url }) => ($url ? 'transparent' : 'var(--primary-color)')};
+  background-image: ${({ $url }) => ($url ? `url(${$url})` : 'none')};
   background-size: cover;
   background-position: center;
   box-shadow: var(--box-shadow);
-  color: white;
+  color: var(--surface-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -67,9 +68,9 @@ const UserName = styled.h2`
   margin: 0 0 5px 0;
 `;
 
-const UserType = styled.h3<{ isAdmin?: boolean }>`
+const UserType = styled.h3<{ $isAdmin?: boolean }>`
   font-size: 1rem;
-  color: ${({ isAdmin }) => isAdmin ? 'var(--primary-color)' : 'var(--light-text-color)'};
+  color: ${({ $isAdmin }) => $isAdmin ? 'var(--primary-color)' : 'var(--light-text-color)'};
   margin: 0 0 20px 0;
   font-weight: 500;
   text-transform: capitalize;
@@ -91,14 +92,45 @@ const InfoLabel = styled.span`
   margin-right: 8px;
 `;
 
-const StatusBadge = styled.span<{ ativo: string }>`
+const StatusBadge = styled.span<{ $ativo: string }>`
   display: inline-block;
   padding: 6px 12px;
   border-radius: 16px;
   font-weight: 500;
-  background-color: ${({ ativo }) => ativo === 'true' ? 'rgba(40, 167, 69, 0.2)' : 'rgba(220, 53, 69, 0.2)'};
-  color: ${({ ativo }) => ativo === 'true' ? '#155724' : '#721c24'};
+  background-color: ${({ $ativo }) =>
+    $ativo === 'true' ? 'var(--status-success-bg)' : 'var(--status-danger-bg)'};
+  color: ${({ $ativo }) =>
+    $ativo === 'true' ? 'var(--status-success-text)' : 'var(--status-danger-text)'};
   margin-bottom: 20px;
+`;
+
+const EmprestimoStatus = styled.span<{ $status: string }>`
+  text-transform: capitalize;
+  color: ${({ $status }) => {
+    switch ($status) {
+      case 'atrasado':
+        return 'var(--danger-color)';
+      case 'devolvido':
+        return 'var(--success-color)';
+      default:
+        return 'var(--primary-color)';
+    }
+  }};
+`;
+
+const InfoGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const ActionContainer = styled.div`
+  padding: 15px;
+  text-align: center;
 `;
 
 const SectionTitle = styled.h2`
@@ -109,7 +141,6 @@ const SectionTitle = styled.h2`
 
 const UsuarioDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { usuario, isLoading: usuarioLoading } = useSelector((state: RootState) => state.usuarios);
   const { emprestimos, isLoading: emprestimosLoading } = useSelector((state: RootState) => state.emprestimos);
@@ -142,14 +173,9 @@ const UsuarioDetailPage: React.FC = () => {
     {
       header: 'Status',
       render: (item) => (
-        <span style={{ 
-          textTransform: 'capitalize',
-          color: item.status === 'atrasado' ? 'var(--danger-color)' : 
-                 item.status === 'devolvido' ? 'var(--success-color)' : 
-                 'var(--primary-color)'
-        }}>
+        <EmprestimoStatus $status={item.status || 'pendente'}>
           {item.status || 'pendente'}
-        </span>
+        </EmprestimoStatus>
       ),
     },
     {
@@ -159,32 +185,32 @@ const UsuarioDetailPage: React.FC = () => {
           as={Link}
           to={`/emprestimos/${item._id}`}
           variant="info"
-          size="small"
+          size="medium"
         >
           Detalhes
         </Button>
       ),
       align: 'right',
-      width: '100px',
     }
   ];
 
   if (usuarioLoading) {
-    return <div>Carregando detalhes do usuário...</div>;
+    return <div role="status" aria-live="polite">Carregando detalhes do usuário...</div>;
   }
 
   if (!usuario) {
-    return <div>Usuário não encontrado.</div>;
+    return <div role="alert">Usuário não encontrado.</div>;
   }
 
   return (
     <div>
       <PageHeader>
         <BackButton
+          as={Link}
+          to="/usuarios"
           variant="outline"
-          size="small"
+          size="medium"
           leftIcon={<FiArrowLeft />}
-          onClick={() => navigate('/usuarios')}
         >
           Voltar
         </BackButton>
@@ -193,7 +219,7 @@ const UsuarioDetailPage: React.FC = () => {
           as={Link}
           to={`/usuarios/editar/${id}`}
           variant="secondary"
-          size="small"
+          size="medium"
           leftIcon={<FiEdit2 />}
         >
           Editar
@@ -203,22 +229,22 @@ const UsuarioDetailPage: React.FC = () => {
       <Card>
         <UserDetailsContainer>
           <div>
-            <Avatar url={usuario.foto && usuario.foto.startsWith('http') ? usuario.foto : undefined}>
+            <Avatar $url={usuario.foto && usuario.foto.startsWith('http') ? usuario.foto : undefined}>
               {usuario.nome ? usuario.nome.charAt(0).toUpperCase() : 'U'}
             </Avatar>
           </div>
           
           <UserInfo>
             <UserName>{usuario.nome}</UserName>
-            <UserType isAdmin={usuario.tipo === 'admin'}>
+            <UserType $isAdmin={usuario.tipo === 'admin'}>
               {usuario.tipo || 'Leitor'}
             </UserType>
             
-            <StatusBadge ativo={String(usuario.ativo !== false)}>
+            <StatusBadge $ativo={String(usuario.ativo !== false)}>
               {usuario.ativo !== false ? 'Usuário Ativo' : 'Usuário Inativo'}
             </StatusBadge>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <InfoGrid>
               <InfoItem>
                 <FiMail />
                 <InfoLabel>Email:</InfoLabel>
@@ -256,7 +282,7 @@ const UsuarioDetailPage: React.FC = () => {
                 <InfoLabel>Cadastrado em:</InfoLabel>
                 {formatDate(usuario.createdAt)}
               </InfoItem>
-            </div>
+            </InfoGrid>
           </UserInfo>
         </UserDetailsContainer>
       </Card>
@@ -274,7 +300,7 @@ const UsuarioDetailPage: React.FC = () => {
           striped
         />
         
-        <div style={{ padding: '15px', textAlign: 'center' }}>
+        <ActionContainer>
           <Button 
             as={Link} 
             to={`/emprestimos/novo?usuario=${id}`} 
@@ -282,7 +308,7 @@ const UsuarioDetailPage: React.FC = () => {
           >
             Realizar Novo Empréstimo
           </Button>
-        </div>
+        </ActionContainer>
       </Card>
     </div>
   );

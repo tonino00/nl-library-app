@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 import { FiArrowLeft, FiEdit2, FiCalendar, FiCheck, FiRepeat, FiAlertTriangle } from 'react-icons/fi';
@@ -12,6 +12,7 @@ import {
 import { AppDispatch, RootState } from '../../store';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { toast } from 'react-toastify';
 
 const PageHeader = styled.div`
@@ -19,6 +20,7 @@ const PageHeader = styled.div`
   align-items: center;
   margin-bottom: 20px;
   gap: 15px;
+  flex-wrap: wrap;
 `;
 
 const BackButton = styled(Button)`
@@ -62,11 +64,38 @@ const InfoItem = styled.div`
   display: flex;
   align-items: center;
   margin-bottom: 12px;
-  
+  flex-wrap: wrap;
+  gap: 8px;
+
   svg {
     margin-right: 10px;
     color: var(--primary-color);
   }
+`;
+
+const DateEditContainer = styled.div`
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+`;
+
+const DateInput = styled.input`
+  padding: 8px 12px;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  font-size: 16px;
+  font-family: inherit;
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+`;
+
+const DateActions = styled.div`
+  display: flex;
+  gap: 5px;
 `;
 
 const InfoLabel = styled.span`
@@ -74,40 +103,40 @@ const InfoLabel = styled.span`
   margin-right: 8px;
 `;
 
-const StatusBadge = styled.div<{ status: string }>`
+const StatusBadge = styled.div<{ $status: string }>`
   display: inline-block;
   padding: 8px 16px;
   border-radius: 20px;
   font-weight: 600;
   font-size: 1rem;
   margin-bottom: 20px;
-  
-  ${({ status }) => {
-    switch (status) {
+
+  ${({ $status }) => {
+    switch ($status) {
       case 'pendente':
         return `
-          background-color: rgba(255, 193, 7, 0.2);
-          color: #856404;
+          background-color: var(--status-pending-bg);
+          color: var(--status-pending-text);
         `;
       case 'devolvido':
         return `
-          background-color: rgba(40, 167, 69, 0.2);
-          color: #155724;
+          background-color: var(--status-success-bg);
+          color: var(--status-success-text);
         `;
       case 'atrasado':
         return `
-          background-color: rgba(220, 53, 69, 0.2);
-          color: #721c24;
+          background-color: var(--status-danger-bg);
+          color: var(--status-danger-text);
         `;
       case 'renovado':
         return `
-          background-color: rgba(23, 162, 184, 0.2);
-          color: #117a8b;
+          background-color: var(--status-active-bg);
+          color: var(--status-active-text);
         `;
       default:
         return `
-          background-color: rgba(108, 117, 125, 0.2);
-          color: #6c757d;
+          background-color: var(--status-active-bg);
+          color: var(--status-active-text);
         `;
     }
   }}
@@ -141,7 +170,7 @@ const BookInfo = styled.div`
   align-items: center;
   margin-bottom: 15px;
   padding: 15px;
-  background-color: #f8f9fa;
+  background-color: var(--hover-bg);
   border-radius: var(--border-radius);
 `;
 
@@ -156,7 +185,7 @@ const BookCover = styled.img`
 const DefaultBookCover = styled.div`
   width: 60px;
   height: 90px;
-  background-color: #eee;
+  background-color: var(--disabled-bg);
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -185,7 +214,7 @@ const UserInfo = styled.div`
   align-items: center;
   margin-bottom: 15px;
   padding: 15px;
-  background-color: #f8f9fa;
+  background-color: var(--hover-bg);
   border-radius: var(--border-radius);
 `;
 
@@ -220,14 +249,33 @@ const UserEmail = styled.p`
   font-size: 0.9rem;
 `;
 
+const LinkContainer = styled.div`
+  margin-top: 5px;
+`;
+
+const ObservacoesSection = styled.div`
+  margin-top: 15px;
+`;
+
+const WarningText = styled.p`
+  color: var(--warning-color);
+  margin: 0;
+`;
+
+const DangerText = styled.p`
+  color: var(--danger-color);
+  margin: 0;
+`;
+
 const EmprestimoDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { emprestimo, isLoading } = useSelector((state: RootState) => state.emprestimos);
   const [editingDate, setEditingDate] = useState(false);
   const [newDate, setNewDate] = useState('');
   const [updatingDate, setUpdatingDate] = useState(false);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<'finalizar' | 'renovar' | null>(null);
   
   useEffect(() => {
     if (id) {
@@ -255,29 +303,34 @@ const EmprestimoDetailPage: React.FC = () => {
                     (emprestimo.status === 'pendente' || emprestimo.status === 'renovado' || emprestimo.status === 'atrasado') && 
                     (emprestimo.renovacoes === undefined || emprestimo.renovacoes < 2);
   
-  const handleFinalizar = async () => {
+  const handleFinalizar = () => {
     if (!id) return;
-    
-    if (window.confirm('Deseja finalizar este empréstimo? Isso irá registrar a devolução do livro.')) {
-      try {
+    setConfirmAction('finalizar');
+    setConfirmDialogOpen(true);
+  };
+
+  const handleRenovar = () => {
+    if (!id) return;
+    setConfirmAction('renovar');
+    setConfirmDialogOpen(true);
+  };
+
+  const handleConfirmAction = async () => {
+    if (!id || !confirmAction) return;
+
+    try {
+      if (confirmAction === 'finalizar') {
         await dispatch(finalizarEmprestimo(id)).unwrap();
         toast.success('Empréstimo finalizado com sucesso!');
-      } catch (error: any) {
-        toast.error(error || 'Erro ao finalizar empréstimo');
-      }
-    }
-  };
-  
-  const handleRenovar = async () => {
-    if (!id) return;
-    
-    if (window.confirm('Deseja renovar este empréstimo?')) {
-      try {
+      } else {
         await dispatch(renovarEmprestimo(id)).unwrap();
         toast.success('Empréstimo renovado com sucesso!');
-      } catch (error: any) {
-        toast.error(error || 'Erro ao renovar empréstimo');
       }
+    } catch (error: any) {
+      toast.error(error || `Erro ao ${confirmAction === 'finalizar' ? 'finalizar' : 'renovar'} empréstimo`);
+    } finally {
+      setConfirmDialogOpen(false);
+      setConfirmAction(null);
     }
   };
   
@@ -323,11 +376,11 @@ const EmprestimoDetailPage: React.FC = () => {
   };
   
   if (isLoading) {
-    return <div>Carregando detalhes do empréstimo...</div>;
+    return <div role="status" aria-live="polite">Carregando detalhes do empréstimo...</div>;
   }
-  
+
   if (!emprestimo) {
-    return <div>Empréstimo não encontrado.</div>;
+    return <div role="alert">Empréstimo não encontrado.</div>;
   }
 
   const livro = typeof emprestimo.livro === 'object' ? emprestimo.livro : null;
@@ -340,7 +393,8 @@ const EmprestimoDetailPage: React.FC = () => {
           variant="outline"
           size="small"
           leftIcon={<FiArrowLeft />}
-          onClick={() => navigate('/emprestimos')}
+          as={Link}
+          to="/emprestimos"
         >
           Voltar
         </BackButton>
@@ -358,7 +412,7 @@ const EmprestimoDetailPage: React.FC = () => {
       
       <EmprestimoDetailsContainer>
         <InfoPanel>
-          <StatusBadge status={emprestimo.status || 'pendente'}>
+          <StatusBadge $status={emprestimo.status || 'pendente'}>
             Status: {emprestimo.status ? emprestimo.status.toUpperCase() : 'PENDENTE'}
           </StatusBadge>
           
@@ -366,17 +420,17 @@ const EmprestimoDetailPage: React.FC = () => {
             <SectionTitle>Livro</SectionTitle>
             <BookInfo>
               {livro?.capa ? (
-                <BookCover src={livro.capa} alt={livro.titulo} />
+                <BookCover src={livro.capa} alt={livro.titulo} loading="lazy" width="60" height="90" />
               ) : (
-                <DefaultBookCover>📕</DefaultBookCover>
+                <DefaultBookCover aria-hidden="true">📕</DefaultBookCover>
               )}
               <BookDetails>
                 <BookTitle>{livro ? livro.titulo : 'Carregando...'}</BookTitle>
                 <BookAuthor>{livro ? livro.autor : ''}</BookAuthor>
                 {livro && (
-                  <div style={{ marginTop: '5px' }}>
+                  <LinkContainer>
                     <Link to={`/livros/${livro._id}`}>Ver detalhes do livro</Link>
-                  </div>
+                  </LinkContainer>
                 )}
               </BookDetails>
             </BookInfo>
@@ -392,9 +446,9 @@ const EmprestimoDetailPage: React.FC = () => {
                 <UserName>{usuario ? usuario.nome : 'Carregando...'}</UserName>
                 <UserEmail>{usuario ? usuario.email : ''}</UserEmail>
                 {usuario && (
-                  <div style={{ marginTop: '5px' }}>
+                  <LinkContainer>
                     <Link to={`/usuarios/${usuario._id}`}>Ver detalhes do usuário</Link>
-                  </div>
+                  </LinkContainer>
                 )}
               </UserDetails>
             </UserInfo>
@@ -412,39 +466,38 @@ const EmprestimoDetailPage: React.FC = () => {
               <FiCalendar />
               <InfoLabel>Data Prevista para Devolução:</InfoLabel>
               {editingDate ? (
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  <input 
-                    type="date" 
+                <DateEditContainer>
+                  <DateInput
+                    type="date"
                     value={newDate}
                     onChange={(e) => setNewDate(e.target.value)}
-                    style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }}
+                    aria-label="Nova data prevista para devolução"
                   />
-                  <div style={{ display: 'flex', gap: '5px' }}>
-                    <Button 
-                      variant="primary" 
-                      size="small" 
+                  <DateActions>
+                    <Button
+                      variant="primary"
+                      size="medium"
                       onClick={handleUpdateDate}
                       isLoading={updatingDate}
                     >
                       Salvar
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="small" 
+                    <Button
+                      variant="outline"
+                      size="medium"
                       onClick={handleCancelEditDate}
                     >
                       Cancelar
                     </Button>
-                  </div>
-                </div>
+                  </DateActions>
+                </DateEditContainer>
               ) : (
                 <>
                   {formatDate(emprestimo.dataPrevistaDevolucao)}
                   {emprestimo.status !== 'devolvido' && (
-                    <Button 
-                      variant="outline" 
-                      size="small" 
-                      style={{ marginLeft: '10px' }}
+                    <Button
+                      variant="outline"
+                      size="medium"
                       onClick={handleStartEditingDate}
                     >
                       Editar
@@ -469,10 +522,10 @@ const EmprestimoDetailPage: React.FC = () => {
             </InfoItem>
             
             {emprestimo.observacoes && (
-              <div style={{ marginTop: '15px' }}>
+              <ObservacoesSection>
                 <InfoLabel>Observações:</InfoLabel>
                 <p>{emprestimo.observacoes}</p>
-              </div>
+              </ObservacoesSection>
             )}
           </InfoSection>
         </InfoPanel>
@@ -517,13 +570,13 @@ const EmprestimoDetailPage: React.FC = () => {
                 {diasRestantes > 0 ? (
                   <p>Restam <strong>{diasRestantes} dias</strong> para a devolução.</p>
                 ) : diasRestantes === 0 ? (
-                  <p style={{ color: 'var(--warning-color)' }}>
+                  <WarningText>
                     <FiAlertTriangle /> A devolução vence <strong>hoje</strong>.
-                  </p>
+                  </WarningText>
                 ) : (
-                  <p style={{ color: 'var(--danger-color)' }}>
+                  <DangerText>
                     <FiAlertTriangle /> Devolução atrasada em <strong>{Math.abs(diasRestantes)} dias</strong>.
-                  </p>
+                  </DangerText>
                 )}
               </>
             )}
@@ -540,6 +593,21 @@ const EmprestimoDetailPage: React.FC = () => {
           )}
         </ActionPanel>
       </EmprestimoDetailsContainer>
+
+      <ConfirmDialog
+        isOpen={confirmDialogOpen}
+        onClose={() => setConfirmDialogOpen(false)}
+        onConfirm={handleConfirmAction}
+        title="Confirmação"
+        message={
+          confirmAction === 'finalizar'
+            ? 'Deseja finalizar este empréstimo? Isso irá registrar a devolução do livro.'
+            : 'Deseja renovar este empréstimo?'
+        }
+        confirmText={confirmAction === 'finalizar' ? 'Finalizar' : 'Renovar'}
+        cancelText="Cancelar"
+        variant="info"
+      />
     </div>
   );
 };

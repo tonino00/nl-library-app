@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useLocation } from "react-router-dom";
 import styled from "styled-components";
@@ -24,6 +24,8 @@ const PageHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 20px;
 `;
 
@@ -53,18 +55,22 @@ const FilterContainer = styled.div`
   min-width: 200px;
 `;
 
+const SearchInputWrapper = styled.div`
+  flex-grow: 1;
+`;
+
 const BookCover = styled.img`
   width: 40px;
   height: 60px;
   object-fit: cover;
   border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--box-shadow);
 `;
 
 const DefaultCover = styled.div`
   width: 40px;
   height: 60px;
-  background-color: #eee;
+  background-color: var(--disabled-bg);
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -80,8 +86,9 @@ const AvailabilityStatus = styled.span<{ $available: boolean }>`
   font-size: 0.75rem;
   font-weight: 500;
   background-color: ${({ $available }) =>
-    $available ? "rgba(40, 167, 69, 0.2)" : "rgba(220, 53, 69, 0.2)"};
-  color: ${({ $available }) => ($available ? "#155724" : "#721c24")};
+    $available ? "var(--status-success-bg)" : "var(--status-danger-bg)"};
+  color: ${({ $available }) =>
+    $available ? "var(--status-success-text)" : "var(--status-danger-text)"};
 `;
 
 const LivrosListPage: React.FC = () => {
@@ -181,14 +188,14 @@ const LivrosListPage: React.FC = () => {
     }
   };
 
-  const handleCategoriaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleCategoriaChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedCategoria(e.target.value);
-  };
+  }, []);
 
-  const handleDeleteClick = (id: string) => {
+  const handleDeleteClick = useCallback((id: string) => {
     setLivroToDelete(id);
     setConfirmDeleteOpen(true);
-  };
+  }, []);
 
   const handleConfirmDelete = async () => {
     try {
@@ -199,7 +206,7 @@ const LivrosListPage: React.FC = () => {
     }
   };
 
-  const formatCategoriaName = (categoria: string | any) => {
+  const formatCategoriaName = useCallback((categoria: string | any) => {
     if (typeof categoria === "string") {
       // Verificar se categorias é um array antes de chamar find
       const foundCategoria = Array.isArray(categorias)
@@ -208,38 +215,34 @@ const LivrosListPage: React.FC = () => {
       return foundCategoria ? foundCategoria.nome : categoria;
     }
     return categoria?.nome || "Não categorizado";
-  };
+  }, [categorias]);
 
-  const columns: Column<Livro>[] = [
+  const columns: Column<Livro>[] = useMemo(() => [
     {
       header: "",
       width: "50px",
       render: (item) =>
         item.capa ? (
-          <BookCover src={item.capa} alt={item.titulo} />
+          <BookCover src={item.capa} alt={item.titulo} loading="lazy" width={40} height={60} />
         ) : (
-          <DefaultCover>📕</DefaultCover>
+          <DefaultCover aria-hidden="true">📕</DefaultCover>
         ),
     },
     {
       header: "Título",
       key: "titulo",
-      width: "250px",
     },
     {
       header: "Autor",
       key: "autor",
-      width: "180px",
     },
     {
       header: "Autor Espiritual",
       render: (item) => item.autorEspiritual || "-",
-      width: "220px",
     },
     {
       header: "Categoria",
       render: (item) => formatCategoriaName(item.categoria),
-      width: "140px",
     },
 
     {
@@ -265,7 +268,7 @@ const LivrosListPage: React.FC = () => {
             as={Link}
             to={`/livros/${item._id}`}
             variant="info"
-            size="small"
+            size="medium"
             leftIcon={<FiEye size={16} />}
           >
             Ver
@@ -276,14 +279,14 @@ const LivrosListPage: React.FC = () => {
                 as={Link}
                 to={`/livros/editar/${item._id}`}
                 variant="secondary"
-                size="small"
+                size="medium"
                 leftIcon={<FiEdit2 size={16} />}
               >
                 Editar
               </Button>
               <Button
                 variant="danger"
-                size="small"
+                size="medium"
                 leftIcon={<FiTrash2 size={16} />}
                 onClick={() => item._id && handleDeleteClick(item._id)}
               >
@@ -294,9 +297,8 @@ const LivrosListPage: React.FC = () => {
         </ActionButtons>
       ),
       align: "right",
-      width: "280px",
     },
-  ];
+  ], [canEdit, formatCategoriaName, handleDeleteClick]);
 
   return (
     <div>
@@ -316,12 +318,12 @@ const LivrosListPage: React.FC = () => {
 
       <Card>
         <SearchContainer>
-          <div style={{ flexGrow: 1 }}>
+          <SearchInputWrapper>
             <SearchBar
               onSearch={handleSearch}
               placeholder="Pesquisar por título, autor ou autor espiritual..."
             />
-          </div>
+          </SearchInputWrapper>
           <FilterContainer>
             <Select
               label="Filtrar por categoria"

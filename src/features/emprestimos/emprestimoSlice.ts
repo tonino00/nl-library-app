@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { emprestimoService } from '../../services/emprestimoService';
 import { Emprestimo, EmprestimoState } from '../../types';
+import { logout } from '../auth/authSlice';
 
 // Estado inicial
 const initialState: EmprestimoState = {
@@ -8,13 +9,22 @@ const initialState: EmprestimoState = {
   emprestimo: null,
   isLoading: false,
   error: null,
+  lastFetched: null,
+  isDataLoaded: false,
 };
 
 // Async thunks
 export const fetchEmprestimos = createAsyncThunk(
   'emprestimos/fetchAll',
-  async (_, { rejectWithValue }) => {
+  async (forceRefresh: boolean = false, { getState, rejectWithValue }) => {
     try {
+      const state = getState() as { emprestimos: EmprestimoState };
+
+      // Se os dados já foram carregados e não é um refresh forçado, não faz nova requisição
+      if (state.emprestimos.isDataLoaded && !forceRefresh) {
+        return state.emprestimos.emprestimos;
+      }
+
       return await emprestimoService.getAll();
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Erro ao buscar empréstimos');
@@ -144,6 +154,17 @@ const emprestimoSlice = createSlice({
     setSelectedEmprestimo: (state, action: PayloadAction<Emprestimo | null>) => {
       state.emprestimo = action.payload;
     },
+    invalidateCache: (state) => {
+      state.isDataLoaded = false;
+      state.lastFetched = null;
+    },
+    resetEmprestimosState: (state) => {
+      state.emprestimos = [];
+      state.emprestimo = null;
+      state.isDataLoaded = false;
+      state.lastFetched = null;
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -155,6 +176,8 @@ const emprestimoSlice = createSlice({
       .addCase(fetchEmprestimos.fulfilled, (state, action: PayloadAction<Emprestimo[]>) => {
         state.isLoading = false;
         state.emprestimos = action.payload;
+        state.lastFetched = new Date().toISOString();
+        state.isDataLoaded = true;
       })
       .addCase(fetchEmprestimos.rejected, (state, action) => {
         state.isLoading = false;
@@ -314,6 +337,15 @@ const emprestimoSlice = createSlice({
       .addCase(pagarMultaEmprestimo.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
+      })
+
+      // Invalidar cache quando usuário fizer logout
+      .addCase(logout.fulfilled, (state) => {
+        state.emprestimos = [];
+        state.emprestimo = null;
+        state.isDataLoaded = false;
+        state.lastFetched = null;
+        state.error = null;
       });
   },
 });

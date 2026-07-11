@@ -48,20 +48,20 @@ const StyledTable = styled.table<{ $compact?: boolean; $striped?: boolean; $hove
   }
 
   th {
-    background-color: #f8f9fa;
+    background-color: var(--table-header-bg);
     font-weight: 600;
     color: var(--text-color);
   }
 
   ${({ $striped }) => $striped && css`
     tbody tr:nth-child(even) {
-      background-color: rgba(0, 0, 0, 0.02);
+      background-color: var(--table-striped-bg);
     }
   `}
 
   ${({ $hoverable }) => $hoverable && css`
     tbody tr:hover {
-      background-color: rgba(46, 90, 136, 0.05);
+      background-color: var(--table-hover-bg);
     }
   `}
 
@@ -72,6 +72,10 @@ const StyledTable = styled.table<{ $compact?: boolean; $striped?: boolean; $hove
 
 const Cell = styled.td<{ $align?: 'left' | 'center' | 'right' }>`
   text-align: ${({ $align }) => $align || 'left'};
+`;
+
+const TableRow = styled.tr<{ $clickable?: boolean }>`
+  cursor: ${({ $clickable }) => ($clickable ? 'pointer' : 'default')};
 `;
 
 const HeaderCell = styled.th<{ $align?: 'left' | 'center' | 'right'; $width?: string }>`
@@ -98,7 +102,7 @@ const PaginationContainer = styled.div`
   align-items: center;
   padding: 12px 16px;
   border-top: 1px solid var(--border-color);
-  background-color: #f8f9fa;
+  background-color: var(--pagination-bg);
   border-radius: 0 0 var(--border-radius) var(--border-radius);
 `;
 
@@ -117,22 +121,31 @@ const PaginationButton = styled.button<{ $disabled?: boolean }>`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  min-width: 44px;
+  min-height: 44px;
   border: 1px solid var(--border-color);
-  background-color: white;
+  background-color: var(--pagination-button-bg);
   border-radius: var(--border-radius);
   cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
   opacity: ${({ $disabled }) => ($disabled ? 0.6 : 1)};
-  transition: all 0.2s;
+  transition: var(--transition);
   color: var(--text-color);
-  
+
   &:hover {
-    background-color: ${({ $disabled }) => ($disabled ? 'white' : '#f0f0f0')};
+    background-color: ${({ $disabled }) => ($disabled ? 'var(--pagination-button-bg)' : 'var(--pagination-button-hover-bg)')};
   }
-  
+
   &:active {
     transform: ${({ $disabled }) => ($disabled ? 'none' : 'scale(0.98)')};
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 `;
 
@@ -142,7 +155,7 @@ const PageNumber = styled.span`
   font-size: 0.9rem;
 `;
 
-function Table<T>({
+function TableInner<T>({
   columns,
   data,
   keyExtractor,
@@ -204,10 +217,10 @@ function Table<T>({
   
   const renderRow = (item: T, index: number) => {
     return (
-      <tr
+      <TableRow
         key={keyExtractor(item)}
         onClick={() => onRowClick && onRowClick(item)}
-        style={{ cursor: onRowClick ? 'pointer' : 'default' }}
+        $clickable={!!onRowClick}
       >
         {columns.map((column, colIndex) => {
           const key = column.key;
@@ -223,7 +236,7 @@ function Table<T>({
             </Cell>
           );
         })}
-      </tr>
+      </TableRow>
     );
   };
 
@@ -241,6 +254,7 @@ function Table<T>({
                 key={`header-${index}`}
                 $align={column.align}
                 $width={column.width}
+                scope="col"
               >
                 {column.header}
               </HeaderCell>
@@ -250,7 +264,9 @@ function Table<T>({
         <tbody>
           {isLoading ? (
             <LoadingRow>
-              <td colSpan={columns.length}>Carregando...</td>
+              <td colSpan={columns.length}>
+                <span aria-live="polite">Carregando...</span>
+              </td>
             </LoadingRow>
           ) : data.length > 0 ? (
             paginatedData.map(renderRow)
@@ -297,5 +313,7 @@ function Table<T>({
     </TableWrapper>
   );
 }
+
+const Table = React.memo(TableInner) as <T>(props: TableProps<T>) => React.ReactElement | null;
 
 export default Table;

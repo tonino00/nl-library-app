@@ -89,6 +89,8 @@ export interface UsuarioState {
   usuario: Usuario | null;
   isLoading: boolean;
   error: string | null;
+  lastFetched: string | null;
+  isDataLoaded: boolean;
 }
 
 export interface EmprestimoState {
@@ -96,4 +98,6 @@ export interface EmprestimoState {
   emprestimo: Emprestimo | null;
   isLoading: boolean;
   error: string | null;
+  lastFetched: string | null;
+  isDataLoaded: boolean;
 }

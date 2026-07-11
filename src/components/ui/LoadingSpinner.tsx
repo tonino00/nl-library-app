@@ -92,7 +92,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   message = 'Carregando...'
 }) => {
   return (
-    <Container>
+    <Container role="status" aria-live="polite" aria-atomic="true">
       <SpinnerContainer>
         <SpinnerRing size={size} />
         {showLogo && (

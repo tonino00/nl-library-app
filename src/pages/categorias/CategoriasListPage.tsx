@@ -17,6 +17,8 @@ const PageHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 20px;
 `;
 
@@ -127,14 +129,14 @@ const CategoriasListPage: React.FC = () => {
                 as={Link}
                 to={`/categorias/editar/${item._id}`}
                 variant="secondary"
-                size="small"
+                size="medium"
                 leftIcon={<FiEdit2 size={16} />}
               >
                 Editar
               </Button>
               <Button
                 variant="danger"
-                size="small"
+                size="medium"
                 leftIcon={<FiTrash2 size={16} />}
                 onClick={() => item._id && handleDeleteClick(item._id)}
               >
@@ -145,7 +147,6 @@ const CategoriasListPage: React.FC = () => {
         </ActionButtons>
       ),
       align: 'right',
-      width: '220px',
     },
   ];
   

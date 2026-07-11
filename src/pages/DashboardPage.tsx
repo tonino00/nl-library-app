@@ -229,8 +229,8 @@ const DashboardPage: React.FC = () => {
     if (user?.tipo === 'leitor' && user?._id) {
       dispatch(fetchEmprestimosByUsuario(user._id));
     } else if (user?.tipo !== 'leitor') {
-      dispatch(fetchUsuarios());
-      dispatch(fetchEmprestimos());
+      dispatch(fetchUsuarios(false));
+      dispatch(fetchEmprestimos(false));
     }
   }, [dispatch, user?.tipo, user?._id]);
 

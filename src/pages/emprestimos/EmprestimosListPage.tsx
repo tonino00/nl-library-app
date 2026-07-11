@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
@@ -18,6 +18,8 @@ const PageHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 20px;
 `;
 
@@ -47,39 +49,43 @@ const FilterContainer = styled.div`
   min-width: 200px;
 `;
 
+const SearchInputWrapper = styled.div`
+  flex-grow: 1;
+`;
+
 const StatusBadge = styled.span<{ $status: string }>`
   display: inline-block;
   padding: 4px 8px;
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 500;
-  
+
   ${({ $status }) => {
     switch ($status) {
       case 'pendente':
         return `
-          background-color: rgba(255, 193, 7, 0.2);
-          color: #856404;
+          background-color: var(--status-pending-bg);
+          color: var(--status-pending-text);
         `;
       case 'devolvido':
         return `
-          background-color: rgba(40, 167, 69, 0.2);
-          color: #155724;
+          background-color: var(--status-success-bg);
+          color: var(--status-success-text);
         `;
       case 'atrasado':
         return `
-          background-color: rgba(220, 53, 69, 0.2);
-          color: #721c24;
+          background-color: var(--status-danger-bg);
+          color: var(--status-danger-text);
         `;
       case 'renovado':
         return `
-          background-color: rgba(23, 162, 184, 0.2);
-          color: #117a8b;
+          background-color: var(--status-active-bg);
+          color: var(--status-active-text);
         `;
       default:
         return `
-          background-color: rgba(108, 117, 125, 0.2);
-          color: #6c757d;
+          background-color: var(--status-active-bg);
+          color: var(--status-active-text);
         `;
     }
   }}
@@ -87,11 +93,10 @@ const StatusBadge = styled.span<{ $status: string }>`
 
 const EmprestimosListPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { emprestimos, isLoading } = useSelector((state: RootState) => state.emprestimos);
+  const { emprestimos, isLoading, isDataLoaded } = useSelector((state: RootState) => state.emprestimos);
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [filteredEmprestimos, setFilteredEmprestimos] = useState<Emprestimo[]>([]);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [emprestimoToDelete, setEmprestimoToDelete] = useState<string>('');
   const [confirmFinalizarOpen, setConfirmFinalizarOpen] = useState(false);
@@ -99,70 +104,61 @@ const EmprestimosListPage: React.FC = () => {
   const [confirmRenovarOpen, setConfirmRenovarOpen] = useState(false);
   const [emprestimoToRenovar, setEmprestimoToRenovar] = useState<string>('');
   
-  // Ref para controlar se já carregamos os dados
-  const dataFetchedRef = React.useRef(false);
-  
   useEffect(() => {
     // Verificar se precisamos forçar uma atualização dos dados
     const forceRefresh = location.state && (location.state as any).forceRefresh;
     
     // Buscar empréstimos apenas se ainda não buscamos ou se forceRefresh for true
-    if (forceRefresh || !dataFetchedRef.current) {
-      dispatch(fetchEmprestimos());
-      dataFetchedRef.current = true;
+    if (forceRefresh || !isDataLoaded) {
+      dispatch(fetchEmprestimos(forceRefresh || false));
     }
     
     // Limpar o state de navegação para evitar atualizações desnecessárias
     if (forceRefresh && window.history) {
       window.history.replaceState({}, '', location.pathname);
     }
-  }, [dispatch, location]);
+  }, [dispatch, location, isDataLoaded]);
   
-  useEffect(() => {
-    // Verifica se emprestimos é um array válido
-    if (emprestimos && Array.isArray(emprestimos)) {
-      let filtered = [...emprestimos];
-      
-      // Aplicar filtro de status se selecionado
-      if (statusFilter && statusFilter !== 'todos') {
-        filtered = filtered.filter(emp => emp.status === statusFilter);
-      }
-      
-      // Aplicar filtro de busca se houver termo
-      if (searchTerm) {
-        filtered = filtered.filter(emp => {
-          const livroTitulo = typeof emp.livro === 'object' && emp.livro?.titulo 
-            ? emp.livro.titulo.toLowerCase()
-            : '';
-          
-          const usuarioNome = typeof emp.usuario === 'object' && emp.usuario?.nome
-            ? emp.usuario.nome.toLowerCase()
-            : '';
-          
-          return livroTitulo.includes(searchTerm.toLowerCase()) || 
-                 usuarioNome.includes(searchTerm.toLowerCase());
-        });
-      }
-      
-      setFilteredEmprestimos(filtered);
-    } else {
-      // Se não for um array válido, inicializa com array vazio
-      setFilteredEmprestimos([]);
+  // Deriva a lista filtrada durante o render, sem estado extra nem re-render duplicado
+  const filteredEmprestimos = useMemo(() => {
+    if (!Array.isArray(emprestimos)) return [];
+
+    let filtered = emprestimos;
+
+    if (statusFilter && statusFilter !== 'todos') {
+      filtered = filtered.filter(emp => emp.status === statusFilter);
     }
+
+    if (searchTerm) {
+      const termo = searchTerm.toLowerCase();
+      filtered = filtered.filter(emp => {
+        const livroTitulo = typeof emp.livro === 'object' && emp.livro?.titulo
+          ? emp.livro.titulo.toLowerCase()
+          : '';
+
+        const usuarioNome = typeof emp.usuario === 'object' && emp.usuario?.nome
+          ? emp.usuario.nome.toLowerCase()
+          : '';
+
+        return livroTitulo.includes(termo) || usuarioNome.includes(termo);
+      });
+    }
+
+    return filtered;
   }, [emprestimos, searchTerm, statusFilter]);
-  
-  const handleSearch = (term: string) => {
+
+  const handleSearch = useCallback((term: string) => {
     setSearchTerm(term);
-  };
-  
-  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  }, []);
+
+  const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setStatusFilter(e.target.value);
-  };
-  
-  const handleFinalizarClick = (id: string) => {
+  }, []);
+
+  const handleFinalizarClick = useCallback((id: string) => {
     setEmprestimoToFinalizar(id);
     setConfirmFinalizarOpen(true);
-  };
+  }, []);
 
   const handleConfirmFinalizar = async () => {
     try {
@@ -173,10 +169,10 @@ const EmprestimosListPage: React.FC = () => {
     }
   };
   
-  const handleRenovarClick = (id: string) => {
+  const handleRenovarClick = useCallback((id: string) => {
     setEmprestimoToRenovar(id);
     setConfirmRenovarOpen(true);
-  };
+  }, []);
 
   const handleConfirmRenovar = async () => {
     try {
@@ -187,10 +183,10 @@ const EmprestimosListPage: React.FC = () => {
     }
   };
 
-  const handleRemoveClick = (id: string) => {
+  const handleRemoveClick = useCallback((id: string) => {
     setEmprestimoToDelete(id);
     setConfirmDeleteOpen(true);
-  };
+  }, []);
 
   const handleConfirmRemove = async () => {
     try {
@@ -220,7 +216,7 @@ const EmprestimosListPage: React.FC = () => {
     return 'Carregando...';
   };
   
-  const columns: Column<Emprestimo>[] = [
+  const columns: Column<Emprestimo>[] = useMemo(() => [
     {
       header: 'Livro',
       render: (item) => getLivroTitulo(item),
@@ -253,27 +249,27 @@ const EmprestimosListPage: React.FC = () => {
             as={Link}
             to={`/emprestimos/${item._id}`}
             variant="info"
-            size="small"
+            size="medium"
             leftIcon={<FiEye size={16} />}
           >
             Ver
           </Button>
-          
+
           {(item.status === 'pendente' || item.status === 'renovado' || item.status === 'atrasado') && (
             <>
               <Button
                 variant="success"
-                size="small"
+                size="medium"
                 leftIcon={<FiCheck size={16} />}
                 onClick={() => item._id && handleFinalizarClick(item._id)}
               >
                 Devolver
               </Button>
-              
+
               {item.renovacoes === undefined || item.renovacoes < 2 ? (
                 <Button
                   variant="primary"
-                  size="small"
+                  size="medium"
                   leftIcon={<FiRepeat size={16} />}
                   onClick={() => item._id && handleRenovarClick(item._id)}
                 >
@@ -282,20 +278,20 @@ const EmprestimosListPage: React.FC = () => {
               ) : null}
             </>
           )}
-          
+
           <Button
             as={Link}
             to={`/emprestimos/editar/${item._id}`}
             variant="secondary"
-            size="small"
+            size="medium"
             leftIcon={<FiEdit size={16} />}
           >
             Editar
           </Button>
-          
+
           <Button
             variant="danger"
-            size="small"
+            size="medium"
             leftIcon={<FiTrash2 size={16} />}
             onClick={() => item._id && handleRemoveClick(item._id)}
           >
@@ -304,9 +300,8 @@ const EmprestimosListPage: React.FC = () => {
         </ActionButtons>
       ),
       align: 'right',
-      width: '360px',
     },
-  ];
+  ], [handleFinalizarClick, handleRenovarClick, handleRemoveClick]);
   
   return (
     <div>
@@ -324,12 +319,12 @@ const EmprestimosListPage: React.FC = () => {
       
       <Card>
         <SearchContainer>
-          <div style={{ flexGrow: 1 }}>
+          <SearchInputWrapper>
             <SearchBar
               onSearch={handleSearch}
               placeholder="Pesquisar por livro ou usuário..."
             />
-          </div>
+          </SearchInputWrapper>
           <FilterContainer>
             <Select
               label="Filtrar por status"

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import styled from 'styled-components';
@@ -24,6 +24,8 @@ const PageHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 20px;
 `;
 
@@ -48,39 +50,37 @@ const ButtonContainer = styled.div`
   display: flex;
   gap: 10px;
   justify-content: flex-end;
+  flex-wrap: wrap;
   margin-top: 20px;
 `;
 
-const AlertBox = styled.div<{ variant: 'warning' | 'danger' | 'success' | 'info' }>`
+const AlertBox = styled.div<{ $variant: 'warning' | 'danger' | 'success' | 'info' }>`
   padding: 15px;
   border-radius: var(--border-radius);
   margin-bottom: 20px;
-  
-  ${({ variant }) => {
-    switch (variant) {
+  border: 1px solid var(--border-color);
+
+  ${({ $variant }) => {
+    switch ($variant) {
       case 'warning':
         return `
-          background-color: rgba(255, 193, 7, 0.2);
-          color: #856404;
-          border: 1px solid #ffeeba;
+          background-color: var(--status-pending-bg);
+          color: var(--status-pending-text);
         `;
       case 'danger':
         return `
-          background-color: rgba(220, 53, 69, 0.2);
-          color: #721c24;
-          border: 1px solid #f5c6cb;
+          background-color: var(--status-danger-bg);
+          color: var(--status-danger-text);
         `;
       case 'success':
         return `
-          background-color: rgba(40, 167, 69, 0.2);
-          color: #155724;
-          border: 1px solid #c3e6cb;
+          background-color: var(--status-success-bg);
+          color: var(--status-success-text);
         `;
       case 'info':
         return `
-          background-color: rgba(23, 162, 184, 0.2);
-          color: #0c5460;
-          border: 1px solid #bee5eb;
+          background-color: var(--status-active-bg);
+          color: var(--status-active-text);
         `;
       default:
         return '';
@@ -101,7 +101,7 @@ const LivroResultsList = styled.div`
   overflow-y: auto;
   border-radius: var(--border-radius);
   border: 1px solid var(--border-color);
-  background-color: #fff;
+  background-color: var(--surface-color);
 `;
 
 const LivroResultItem = styled.button`
@@ -117,7 +117,7 @@ const LivroResultItem = styled.button`
   font-size: 0.9rem;
 
   &:hover {
-    background-color: #f5f7fb;
+    background-color: var(--hover-bg);
   }
 `;
 
@@ -169,7 +169,7 @@ const EmprestimoFormPage: React.FC = () => {
   
   // Buscar dados necessários
   useEffect(() => {
-    dispatch(fetchUsuarios());
+    dispatch(fetchUsuarios(false));
     dispatch(fetchLivros(false));
     
     if (isEditMode && id) {
@@ -314,9 +314,10 @@ const EmprestimoFormPage: React.FC = () => {
           {isEditMode ? 'Editar Empréstimo' : 'Novo Empréstimo'}
         </PageTitle>
         <Button
+          as={Link}
+          to="/emprestimos"
           variant="outline"
           leftIcon={<FiArrowLeft />}
-          onClick={() => navigate('/emprestimos')}
         >
           Voltar
         </Button>
@@ -334,7 +335,7 @@ const EmprestimoFormPage: React.FC = () => {
         ) : (
           <Form onSubmit={handleSubmit(onSubmit)}>
             {selectedLivroId && !livroDisponivelParaEmprestimo && !isEditMode && (
-              <AlertBox variant="danger">
+              <AlertBox $variant="danger" role="alert">
                 <strong>Atenção!</strong> Este livro não está disponível para empréstimo.
               </AlertBox>
             )}
@@ -376,17 +377,13 @@ const EmprestimoFormPage: React.FC = () => {
                     value={livroSearchTerm}
                     onChange={handleLivroSearchChange}
                     onKeyDown={handleLivroSearchKeyDown}
+                    error={errors.livro?.message}
                     fullWidth
                   />
                   <Input
                     type="hidden"
                     {...register('livro', { required: 'O livro é obrigatório' })}
                   />
-                  {errors.livro?.message && (
-                    <span style={{ color: 'var(--danger-color)', fontSize: '12px' }}>
-                      {errors.livro.message}
-                    </span>
-                  )}
                   {Array.isArray(livros) && livros.length > 0 && hasSearched && livroSearchTerm.trim() && (
                     <LivroResultsList>
                       {livros
@@ -436,14 +433,13 @@ const EmprestimoFormPage: React.FC = () => {
               placeholder="Observações sobre o empréstimo (opcional)"
               fullWidth
               as="textarea"
-              style={{ minHeight: '120px' }}
             />
             
             <ButtonContainer>
               <Button
-                type="button"
+                as={Link}
+                to="/emprestimos"
                 variant="outline"
-                onClick={() => navigate('/emprestimos')}
               >
                 Cancelar
               </Button>

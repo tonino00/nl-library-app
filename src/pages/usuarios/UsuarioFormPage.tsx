@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import styled from 'styled-components';
@@ -27,6 +27,8 @@ const PageHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 20px;
 `;
 
@@ -51,6 +53,7 @@ const ButtonContainer = styled.div`
   display: flex;
   gap: 10px;
   justify-content: flex-end;
+  flex-wrap: wrap;
   margin-top: 20px;
 `;
 
@@ -66,7 +69,7 @@ const ImagePreview = styled.img`
   height: 150px;
   border-radius: 50%;
   object-fit: cover;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--box-shadow);
 `;
 
 const AvatarPlaceholder = styled.div`
@@ -77,9 +80,9 @@ const AvatarPlaceholder = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--surface-color);
   font-size: 3rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--box-shadow);
 `;
 
 const UsuarioFormPage: React.FC = () => {
@@ -95,7 +98,17 @@ const UsuarioFormPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   
   const fotoUrl = watch('foto');
-  
+  const [fotoError, setFotoError] = useState(false);
+
+  useEffect(() => {
+    setFotoError(false);
+  }, [fotoUrl]);
+
+  const handleFotoError = () => {
+    setFotoError(true);
+    toast.error('Erro ao carregar a imagem. Verifique o URL fornecido.');
+  };
+
   useEffect(() => {
     if (isEditMode && id) {
       dispatch(fetchUsuarioById(id));
@@ -168,7 +181,7 @@ const UsuarioFormPage: React.FC = () => {
   ];
   
   if (usuarioLoading && isEditMode) {
-    return <div>Carregando...</div>;
+    return <div role="status" aria-live="polite">Carregando...</div>;
   }
   
   return (
@@ -178,9 +191,10 @@ const UsuarioFormPage: React.FC = () => {
           {isEditMode ? 'Editar Usuário' : 'Novo Usuário'}
         </PageTitle>
         <Button
+          as={Link}
+          to="/usuarios"
           variant="outline"
           leftIcon={<FiArrowLeft />}
-          onClick={() => navigate('/usuarios')}
         >
           Voltar
         </Button>
@@ -188,16 +202,16 @@ const UsuarioFormPage: React.FC = () => {
       
       <Card>
         <Form onSubmit={handleSubmit(onSubmit)}>
-          {fotoUrl && (
+          {fotoUrl && !fotoError && (
             <ImagePreviewContainer>
               <h4>Foto de Perfil:</h4>
               <ImagePreview 
                 src={fotoUrl}
                 alt="Foto de perfil"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                  toast.error('Erro ao carregar a imagem. Verifique o URL fornecido.');
-                }}
+                onError={handleFotoError}
+                loading="lazy"
+                width="150"
+                height="150"
               />
             </ImagePreviewContainer>
           )}
@@ -338,9 +352,9 @@ const UsuarioFormPage: React.FC = () => {
           
           <ButtonContainer>
             <Button
-              type="button"
+              as={Link}
+              to="/usuarios"
               variant="outline"
-              onClick={() => navigate('/usuarios')}
             >
               Cancelar
             </Button>
