@@ -3,7 +3,7 @@ import styled from 'styled-components';
 
 type InputElement = HTMLInputElement | HTMLTextAreaElement;
 
-interface InputProps extends Omit<React.InputHTMLAttributes<InputElement>, 'as'> {
+export interface InputProps extends Omit<React.InputHTMLAttributes<InputElement>, 'as'> {
   label?: string;
   helperText?: string;
   error?: string;

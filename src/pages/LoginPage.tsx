@@ -7,6 +7,7 @@ import { login } from '../features/auth/authSlice';
 import { RootState } from '../store';
 import { AppDispatch } from '../store';
 import Input from '../components/ui/Input';
+import PasswordInput from '../components/ui/PasswordInput';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 
@@ -165,8 +166,7 @@ const LoginPage: React.FC = () => {
             leftIcon={<FiUser />}
           />
 
-          <Input
-            type="password"
+          <PasswordInput
             name="senha"
             label="Senha"
             placeholder="Digite sua senha"
