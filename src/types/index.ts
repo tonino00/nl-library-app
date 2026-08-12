@@ -15,7 +15,7 @@ export interface Emprestimo {
   dataEmprestimo?: Date;
   dataPrevistaDevolucao: Date;
   dataDevolucao?: Date;
-  status?: 'pendente' | 'devolvido' | 'atrasado' | 'renovado';
+  status?: 'pendente' | 'reservado' | 'emprestado' | 'devolvido' | 'atrasado' | 'renovado' | 'expirado';
   multa?: number;
   renovacoes?: number;
   observacoes?: string;
@@ -72,6 +72,8 @@ export interface CategoriaState {
   categoria: Categoria | null;
   isLoading: boolean;
   error: string | null;
+  lastFetched: string | null;
+  isDataLoaded: boolean;
 }
 
 export interface LivroState {
@@ -82,6 +84,17 @@ export interface LivroState {
   error: string | null;
   lastFetched: string | null;
   isDataLoaded: boolean;
+  // Paginação/filtro server-side, usados só pela listagem de livros.
+  // Independentes de `livros` acima, que outras telas (dashboard, seletor de
+  // livro no empréstimo) esperam conter o catálogo completo.
+  paginado: {
+    livros: Livro[];
+    total: number;
+    totalPaginas: number;
+    page: number;
+    isLoading: boolean;
+    pendingKey: string | null;
+  };
 }
 
 export interface UsuarioState {

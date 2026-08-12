@@ -103,5 +103,36 @@ export const livroService = {
     const livros = response.data.data || response.data;
     const total = response.data.total;
     return { livros, total };
-  }
+  },
+
+  // Busca uma única página já filtrada/paginada no servidor (sem trazer a coleção inteira).
+  // Usado pela listagem de livros; os demais consumidores (dropdowns, dashboard) continuam
+  // usando getAll(), que carrega o catálogo completo.
+  getPaginado: async (params: {
+    page: number;
+    limit: number;
+    titulo?: string;
+    categoria?: string;
+    disponivel?: boolean;
+  }): Promise<{ livros: Livro[]; total: number; totalPaginas: number; page: number }> => {
+    const response = await api.get(ENDPOINT, {
+      params: {
+        page: params.page,
+        limit: params.limit,
+        titulo: params.titulo || undefined,
+        categoria: params.categoria || undefined,
+        disponivel: params.disponivel,
+      },
+    });
+    const livros = response.data.data || response.data;
+    const total = response.data.total ?? (Array.isArray(livros) ? livros.length : 0);
+    const totalPaginas = response.data.totalPaginas ?? Math.max(1, Math.ceil(total / params.limit));
+
+    return {
+      livros: Array.isArray(livros) ? livros : [],
+      total,
+      totalPaginas,
+      page: params.page,
+    };
+  },
 };

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import {
   FiPlus,
@@ -21,6 +21,7 @@ import Table, { Column } from "../../components/ui/Table";
 import SearchBar from "../../components/ui/SearchBar";
 import Card from "../../components/ui/Card";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import DropdownMenu, { DropdownMenuItem } from "../../components/ui/DropdownMenu";
 import { Usuario } from "../../types";
 import { toast } from "react-toastify";
 
@@ -36,11 +37,6 @@ const PageHeader = styled.div`
 const PageTitle = styled.h1`
   font-size: 1.75rem;
   color: var(--text-color);
-`;
-
-const ActionButtons = styled.div`
-  display: flex;
-  gap: 10px;
 `;
 
 const SearchContainer = styled.div`
@@ -81,6 +77,7 @@ const TipoUsuario = styled.span`
 
 const UsuariosListPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const { usuarios, isLoading, isDataLoaded } = useSelector(
     (state: RootState) => state.usuarios
   );
@@ -189,55 +186,41 @@ const UsuariosListPage: React.FC = () => {
     },
     {
       header: "Ações",
-      render: (item) => (
-        <ActionButtons>
-          <Button
-            as={Link}
-            to={`/usuarios/${item._id}`}
-            variant="info"
-            size="medium"
-            leftIcon={<FiEye size={16} />}
-          >
-            Ver
-          </Button>
-          <Button
-            as={Link}
-            to={`/usuarios/editar/${item._id}`}
-            variant="secondary"
-            size="medium"
-            leftIcon={<FiEdit2 size={16} />}
-          >
-            Editar
-          </Button>
-          <Button
-            variant="primary"
-            size="medium"
-            leftIcon={
-              item.ativo !== false ? (
-                <FiToggleRight size={16} />
-              ) : (
-                <FiToggleLeft size={16} />
-              )
-            }
-            onClick={() => item._id && handleToggleAtivo(item._id)}
-          >
-            {item.ativo !== false ? "Desativar" : "Ativar"}
-          </Button>
-          {isAdmin && (
-            <Button
-              variant="danger"
-              size="medium"
-              leftIcon={<FiTrash2 size={16} />}
-              onClick={() => item._id && handleDeleteClick(item._id)}
-            >
-              Excluir
-            </Button>
-          )}
-        </ActionButtons>
-      ),
+      width: "70px",
+      render: (item) => {
+        const menuItems: DropdownMenuItem[] = [
+          {
+            label: "Ver",
+            icon: <FiEye size={16} />,
+            onClick: () => navigate(`/usuarios/${item._id}`),
+          },
+          {
+            label: "Editar",
+            icon: <FiEdit2 size={16} />,
+            onClick: () => navigate(`/usuarios/editar/${item._id}`),
+          },
+          {
+            label: item.ativo !== false ? "Desativar" : "Ativar",
+            icon: item.ativo !== false ? <FiToggleRight size={16} /> : <FiToggleLeft size={16} />,
+            onClick: () => item._id && handleToggleAtivo(item._id),
+          },
+          ...(isAdmin
+            ? [
+                {
+                  label: "Excluir",
+                  icon: <FiTrash2 size={16} />,
+                  variant: "danger" as const,
+                  onClick: () => item._id && handleDeleteClick(item._id),
+                },
+              ]
+            : []),
+        ];
+
+        return <DropdownMenu triggerLabel={`Ações para ${item.nome}`} items={menuItems} />;
+      },
       align: "right",
     },
-  ], [isAdmin, handleDeleteClick, handleToggleAtivo]);
+  ], [isAdmin, handleDeleteClick, handleToggleAtivo, navigate]);
 
   return (
     <div>

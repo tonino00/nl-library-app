@@ -97,8 +97,8 @@ const LivroFormPage: React.FC = () => {
   };
 
   useEffect(() => {
-    dispatch(fetchCategorias());
-    
+    dispatch(fetchCategorias(false));
+
     if (isEditMode && id) {
       dispatch(fetchLivroById(id));
     }

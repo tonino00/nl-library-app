@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { FiPlus, FiEye, FiCheck, FiRepeat, FiTrash2, FiEdit } from 'react-icons/fi';
 import { fetchEmprestimos, finalizarEmprestimo, renovarEmprestimo, deleteEmprestimo } from '../../features/emprestimos/emprestimoSlice';
@@ -11,8 +11,10 @@ import SearchBar from '../../components/ui/SearchBar';
 import Select from '../../components/ui/Select';
 import Card from '../../components/ui/Card';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import DropdownMenu, { DropdownMenuItem } from '../../components/ui/DropdownMenu';
 import { Emprestimo } from '../../types';
 import { toast } from 'react-toastify';
+import { getStatusColorVars, getStatusLabel } from '../../utils/statusEmprestimo';
 
 const PageHeader = styled.div`
   display: flex;
@@ -26,11 +28,6 @@ const PageHeader = styled.div`
 const PageTitle = styled.h1`
   font-size: 1.75rem;
   color: var(--text-color);
-`;
-
-const ActionButtons = styled.div`
-  display: flex;
-  gap: 10px;
 `;
 
 const SearchContainer = styled.div`
@@ -61,38 +58,17 @@ const StatusBadge = styled.span<{ $status: string }>`
   font-weight: 500;
 
   ${({ $status }) => {
-    switch ($status) {
-      case 'pendente':
-        return `
-          background-color: var(--status-pending-bg);
-          color: var(--status-pending-text);
-        `;
-      case 'devolvido':
-        return `
-          background-color: var(--status-success-bg);
-          color: var(--status-success-text);
-        `;
-      case 'atrasado':
-        return `
-          background-color: var(--status-danger-bg);
-          color: var(--status-danger-text);
-        `;
-      case 'renovado':
-        return `
-          background-color: var(--status-active-bg);
-          color: var(--status-active-text);
-        `;
-      default:
-        return `
-          background-color: var(--status-active-bg);
-          color: var(--status-active-text);
-        `;
-    }
+    const { bg, text } = getStatusColorVars($status);
+    return `
+      background-color: ${bg};
+      color: ${text};
+    `;
   }}
 `;
 
 const EmprestimosListPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const { emprestimos, isLoading, isDataLoaded } = useSelector((state: RootState) => state.emprestimos);
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
@@ -237,71 +213,57 @@ const EmprestimosListPage: React.FC = () => {
       header: 'Status',
       render: (item) => (
         <StatusBadge $status={item.status || 'pendente'}>
-          {item.status || 'pendente'}
+          {getStatusLabel(item.status)}
         </StatusBadge>
       ),
     },
     {
       header: 'Ações',
-      render: (item) => (
-        <ActionButtons>
-          <Button
-            as={Link}
-            to={`/emprestimos/${item._id}`}
-            variant="info"
-            size="medium"
-            leftIcon={<FiEye size={16} />}
-          >
-            Ver
-          </Button>
+      width: '70px',
+      render: (item) => {
+        const podeGerenciar = item.status === 'pendente' || item.status === 'renovado' || item.status === 'atrasado';
+        const menuItems: DropdownMenuItem[] = [
+          {
+            label: 'Ver',
+            icon: <FiEye size={16} />,
+            onClick: () => navigate(`/emprestimos/${item._id}`),
+          },
+          ...(podeGerenciar
+            ? [
+                {
+                  label: 'Devolver',
+                  icon: <FiCheck size={16} />,
+                  onClick: () => item._id && handleFinalizarClick(item._id),
+                },
+              ]
+            : []),
+          ...(podeGerenciar && (item.renovacoes === undefined || item.renovacoes < 2)
+            ? [
+                {
+                  label: 'Renovar',
+                  icon: <FiRepeat size={16} />,
+                  onClick: () => item._id && handleRenovarClick(item._id),
+                },
+              ]
+            : []),
+          {
+            label: 'Editar',
+            icon: <FiEdit size={16} />,
+            onClick: () => navigate(`/emprestimos/editar/${item._id}`),
+          },
+          {
+            label: 'Excluir',
+            icon: <FiTrash2 size={16} />,
+            variant: 'danger',
+            onClick: () => item._id && handleRemoveClick(item._id),
+          },
+        ];
 
-          {(item.status === 'pendente' || item.status === 'renovado' || item.status === 'atrasado') && (
-            <>
-              <Button
-                variant="success"
-                size="medium"
-                leftIcon={<FiCheck size={16} />}
-                onClick={() => item._id && handleFinalizarClick(item._id)}
-              >
-                Devolver
-              </Button>
-
-              {item.renovacoes === undefined || item.renovacoes < 2 ? (
-                <Button
-                  variant="primary"
-                  size="medium"
-                  leftIcon={<FiRepeat size={16} />}
-                  onClick={() => item._id && handleRenovarClick(item._id)}
-                >
-                  Renovar
-                </Button>
-              ) : null}
-            </>
-          )}
-
-          <Button
-            as={Link}
-            to={`/emprestimos/editar/${item._id}`}
-            variant="secondary"
-            size="medium"
-            leftIcon={<FiEdit size={16} />}
-          >
-            Editar
-          </Button>
-
-          <Button
-            variant="danger"
-            size="medium"
-            leftIcon={<FiTrash2 size={16} />}
-            onClick={() => item._id && handleRemoveClick(item._id)}
-          >
-            Excluir
-          </Button>
-        </ActionButtons>
-      ),
+        return <DropdownMenu triggerLabel={`Ações para o empréstimo de ${getLivroTitulo(item)}`} items={menuItems} />;
+      },
       align: 'right',
     },
-  ], [handleFinalizarClick, handleRenovarClick, handleRemoveClick]);
+  ], [handleFinalizarClick, handleRenovarClick, handleRemoveClick, navigate]);
   
   return (
     <div>
@@ -334,9 +296,11 @@ const EmprestimosListPage: React.FC = () => {
                 { value: 'todos', label: 'Todos os status' },
                 { value: 'pendente', label: 'Pendentes' },
                 { value: 'renovado', label: 'Renovados' },
-                { value: 'reservado', label: 'Reservado' },
+                { value: 'reservado', label: 'Reservados' },
+                { value: 'emprestado', label: 'Emprestados' },
                 { value: 'devolvido', label: 'Devolvidos' },
                 { value: 'atrasado', label: 'Atrasados' },
+                { value: 'expirado', label: 'Reservas expiradas' },
               ]}
               fullWidth
             />

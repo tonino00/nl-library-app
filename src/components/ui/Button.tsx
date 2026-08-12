@@ -12,6 +12,9 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  // Botão quadrado só com ícone (o filho deve ser o ícone). Exige `aria-label`
+  // já que não sobra texto visível para dar nome ao botão.
+  iconOnly?: boolean;
   as?: any;
   to?: string;
 }
@@ -122,6 +125,7 @@ const StyledButton = styled.button<{
   $variant?: ButtonVariant;
   $size?: ButtonSize;
   $fullWidth?: boolean;
+  $iconOnly?: boolean;
 }>`
   display: inline-flex;
   align-items: center;
@@ -131,14 +135,23 @@ const StyledButton = styled.button<{
   border: none;
   transition: var(--transition);
   cursor: pointer;
-  
+
   ${({ $variant = 'primary' }) => getButtonStyles($variant)};
   ${({ $size = 'medium' }) => getButtonSize($size)};
-  
+
+  ${({ $iconOnly }) => $iconOnly && css`
+    padding: 0;
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  `}
+
   ${({ $fullWidth }) => $fullWidth && css`
     width: 100%;
   `}
-  
+
   &:disabled {
     opacity: 0.7;
     cursor: not-allowed;
@@ -169,7 +182,7 @@ const IconWrapper = styled.span<{ $position: 'left' | 'right' }>`
 const filterDOMProps = (props: Record<string, any>) => {
   const filteredProps = { ...props };
   // Lista de props personalizadas que devem ser filtradas
-  const propsToFilter = ['fullWidth', 'variant', 'size', 'isLoading', 'leftIcon', 'rightIcon', 'to'];
+  const propsToFilter = ['fullWidth', 'variant', 'size', 'isLoading', 'leftIcon', 'rightIcon', 'to', 'iconOnly'];
   
   propsToFilter.forEach(prop => {
     if (prop in filteredProps) {
@@ -180,27 +193,28 @@ const filterDOMProps = (props: Record<string, any>) => {
   return filteredProps;
 };
 
-const Button: React.FC<ButtonProps> = ({ 
-  children, 
-  variant = 'primary', 
-  size = 'medium', 
+const Button: React.FC<ButtonProps> = ({
+  children,
+  variant = 'primary',
+  size = 'medium',
   isLoading = false,
   leftIcon,
   rightIcon,
+  iconOnly = false,
   disabled,
   as,
   fullWidth,
   to,
-  ...rest 
+  ...rest
 }) => {
   const Component = as || 'button';
-  
+
   // Filtrar as props personalizadas que não devem ser passadas para o DOM
   const domProps = filterDOMProps(rest);
 
   // Preparando props adicionais se o componente for um Link
   const linkProps = to && Component === Link ? { to } : {};
-  
+
   const isLink = Component === Link;
 
   return (
@@ -209,6 +223,7 @@ const Button: React.FC<ButtonProps> = ({
       $variant={variant}
       $size={size}
       $fullWidth={fullWidth}
+      $iconOnly={iconOnly}
       disabled={!isLink && (disabled || isLoading)}
       aria-disabled={isLink ? disabled || isLoading : undefined}
       {...domProps}
@@ -216,6 +231,8 @@ const Button: React.FC<ButtonProps> = ({
     >
       {isLoading ? (
         'Carregando...'
+      ) : iconOnly ? (
+        children
       ) : (
         <>
           {leftIcon && <IconWrapper $position="left">{leftIcon}</IconWrapper>}

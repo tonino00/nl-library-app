@@ -11,6 +11,7 @@ import { fetchUsuarios } from '../features/usuarios/usuarioSlice';
 import { AppDispatch, RootState } from '../store';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import { getStatusLabel } from '../utils/statusEmprestimo';
 
 const DashboardContainer = styled.div`
   padding: 20px 16px;
@@ -156,6 +157,11 @@ const StatusBadge = styled.span<{ $status: string }>`
           background-color: var(--status-urgent-bg);
           color: var(--status-urgent-text);
         `;
+      case 'expirado':
+        return `
+          background-color: var(--status-neutral-bg);
+          color: var(--status-neutral-text);
+        `;
       default:
         return `
           background-color: var(--status-active-bg);
@@ -224,7 +230,7 @@ const DashboardPage: React.FC = () => {
 
   useEffect(() => {
     dispatch(fetchLivros(false));
-    dispatch(fetchCategorias());
+    dispatch(fetchCategorias(false));
 
     if (user?.tipo === 'leitor' && user?._id) {
       dispatch(fetchEmprestimosByUsuario(user._id));
@@ -484,7 +490,7 @@ const DashboardPage: React.FC = () => {
                               </ItemDate>
                             </div>
                             <StatusBadge $status={emprestimo.status || 'pendente'}>
-                              {emprestimo.status || 'pendente'}
+                              {getStatusLabel(emprestimo.status)}
                             </StatusBadge>
                           </ItemMeta>
                           <ItemMeta>
@@ -627,7 +633,7 @@ const DashboardPage: React.FC = () => {
                               Devolução: {formatDate(emprestimo.dataPrevistaDevolucao)}
                             </div>
                             <StatusBadge $status={emprestimo.status || 'pendente'}>
-                              {emprestimo.status || 'pendente'}
+                              {getStatusLabel(emprestimo.status)}
                             </StatusBadge>
                           </ItemMeta>
                         </ItemListItem>

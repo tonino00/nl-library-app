@@ -14,6 +14,7 @@ import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { toast } from 'react-toastify';
+import { getStatusColorVars, getStatusLabel } from '../../utils/statusEmprestimo';
 
 const PageHeader = styled.div`
   display: flex;
@@ -112,33 +113,11 @@ const StatusBadge = styled.div<{ $status: string }>`
   margin-bottom: 20px;
 
   ${({ $status }) => {
-    switch ($status) {
-      case 'pendente':
-        return `
-          background-color: var(--status-pending-bg);
-          color: var(--status-pending-text);
-        `;
-      case 'devolvido':
-        return `
-          background-color: var(--status-success-bg);
-          color: var(--status-success-text);
-        `;
-      case 'atrasado':
-        return `
-          background-color: var(--status-danger-bg);
-          color: var(--status-danger-text);
-        `;
-      case 'renovado':
-        return `
-          background-color: var(--status-active-bg);
-          color: var(--status-active-text);
-        `;
-      default:
-        return `
-          background-color: var(--status-active-bg);
-          color: var(--status-active-text);
-        `;
-    }
+    const { bg, text } = getStatusColorVars($status);
+    return `
+      background-color: ${bg};
+      color: ${text};
+    `;
   }}
 `;
 
@@ -413,7 +392,7 @@ const EmprestimoDetailPage: React.FC = () => {
       <EmprestimoDetailsContainer>
         <InfoPanel>
           <StatusBadge $status={emprestimo.status || 'pendente'}>
-            Status: {emprestimo.status ? emprestimo.status.toUpperCase() : 'PENDENTE'}
+            Status: {getStatusLabel(emprestimo.status)}
           </StatusBadge>
           
           <InfoSection>

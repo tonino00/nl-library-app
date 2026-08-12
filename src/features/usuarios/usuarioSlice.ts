@@ -2,15 +2,23 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { usuarioService } from '../../services/usuarioService';
 import { Usuario, UsuarioState } from '../../types';
 import { logout } from '../auth/authSlice';
+import { loadCachedData, saveCachedData, clearCachedData } from '../../utils/persistedCache';
 
-// Estado inicial
+const CACHE_KEY = 'usuarios';
+// Sem cache Redis dedicado no backend para esta rota; TTL curto no cliente
+// evita apenas o refetch redundante de um reload feito segundos após o anterior.
+const CACHE_TTL_MS = 60_000;
+
+const cachedUsuarios = loadCachedData<Usuario[]>(CACHE_KEY, CACHE_TTL_MS);
+
+// Estado inicial: reidrata de um reload recente antes de assumir estado vazio
 const initialState: UsuarioState = {
-  usuarios: [],
+  usuarios: cachedUsuarios ?? [],
   usuario: null,
   isLoading: false,
   error: null,
-  lastFetched: null,
-  isDataLoaded: false,
+  lastFetched: cachedUsuarios ? new Date().toISOString() : null,
+  isDataLoaded: !!cachedUsuarios,
 };
 
 // Async thunks
@@ -105,6 +113,7 @@ const usuarioSlice = createSlice({
     invalidateCache: (state) => {
       state.isDataLoaded = false;
       state.lastFetched = null;
+      clearCachedData(CACHE_KEY);
     },
     resetUsuariosState: (state) => {
       state.usuarios = [];
@@ -112,6 +121,7 @@ const usuarioSlice = createSlice({
       state.isDataLoaded = false;
       state.lastFetched = null;
       state.error = null;
+      clearCachedData(CACHE_KEY);
     },
   },
   extraReducers: (builder) => {
@@ -126,6 +136,7 @@ const usuarioSlice = createSlice({
         state.usuarios = action.payload;
         state.lastFetched = new Date().toISOString();
         state.isDataLoaded = true;
+        saveCachedData<Usuario[]>(CACHE_KEY, state.usuarios);
       })
       .addCase(fetchUsuarios.rejected, (state, action) => {
         state.isLoading = false;
@@ -154,6 +165,7 @@ const usuarioSlice = createSlice({
       .addCase(createUsuario.fulfilled, (state, action: PayloadAction<Usuario>) => {
         state.isLoading = false;
         state.usuarios.push(action.payload);
+        saveCachedData<Usuario[]>(CACHE_KEY, state.usuarios);
       })
       .addCase(createUsuario.rejected, (state, action) => {
         state.isLoading = false;
@@ -171,6 +183,7 @@ const usuarioSlice = createSlice({
           usuario._id === action.payload._id ? action.payload : usuario
         );
         state.usuario = action.payload;
+        saveCachedData<Usuario[]>(CACHE_KEY, state.usuarios);
       })
       .addCase(updateUsuario.rejected, (state, action) => {
         state.isLoading = false;
@@ -188,6 +201,7 @@ const usuarioSlice = createSlice({
         if (state.usuario && state.usuario._id === action.payload) {
           state.usuario = null;
         }
+        saveCachedData<Usuario[]>(CACHE_KEY, state.usuarios);
       })
       .addCase(deleteUsuario.rejected, (state, action) => {
         state.isLoading = false;
@@ -207,6 +221,7 @@ const usuarioSlice = createSlice({
         if (state.usuario && state.usuario._id === action.payload._id) {
           state.usuario = action.payload;
         }
+        saveCachedData<Usuario[]>(CACHE_KEY, state.usuarios);
       })
       .addCase(toggleAtivoUsuario.rejected, (state, action) => {
         state.isLoading = false;
@@ -220,6 +235,7 @@ const usuarioSlice = createSlice({
         state.isDataLoaded = false;
         state.lastFetched = null;
         state.error = null;
+        clearCachedData(CACHE_KEY);
       });
   },
 });

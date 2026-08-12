@@ -41,6 +41,8 @@ export const GlobalStyles = createGlobalStyle`
     --status-danger-text: #5C161C;
     --status-urgent-bg: rgba(220, 53, 69, 0.15);
     --status-urgent-text: #5C161C;
+    --status-neutral-bg: rgba(108, 117, 125, 0.15);
+    --status-neutral-text: #3E4348;
     --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     --border-radius: 8px;
     --transition: all 0.3s ease;
@@ -158,6 +160,8 @@ export const GlobalStyles = createGlobalStyle`
       --status-danger-text: #fda4af;
       --status-urgent-bg: #3d0a0f;
       --status-urgent-text: #fda4af;
+      --status-neutral-bg: #2a2d30;
+      --status-neutral-text: #cfd4d8;
     }
   }
 
