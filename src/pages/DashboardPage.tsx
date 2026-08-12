@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { FiBook, FiUsers, FiRepeat, FiAlertTriangle } from 'react-icons/fi';
 import { fetchLivros } from '../features/livros/livroSlice';
 import { fetchCategorias } from '../features/categorias/categoriaSlice';
@@ -177,10 +177,41 @@ const NoItems = styled.div`
   color: var(--light-text-color);
 `;
 
-const LoadingMessage = styled.div`
-  text-align: center;
-  padding: 20px;
-  color: var(--light-text-color);
+const shimmer = keyframes`
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+`;
+
+// Placeholder de conteúdo: cada bar/circle é dimensionado igual ao elemento
+// real que vai substituir, pra não pular de tamanho quando os dados chegam.
+const SkeletonBase = styled.div`
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--disabled-bg) 25%,
+    var(--hover-bg) 50%,
+    var(--disabled-bg) 75%
+  );
+  background-size: 200% 100%;
+  animation: ${shimmer} 1.6s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    background: var(--disabled-bg);
+  }
+`;
+
+const SkeletonBar = styled(SkeletonBase)<{ $width?: string; $height?: string; $marginBottom?: string }>`
+  width: ${({ $width }) => $width || '100%'};
+  height: ${({ $height }) => $height || '14px'};
+  margin-bottom: ${({ $marginBottom }) => $marginBottom || '0'};
+`;
+
+const SkeletonCircle = styled(SkeletonBase)<{ $size: string }>`
+  width: ${({ $size }) => $size};
+  height: ${({ $size }) => $size};
+  border-radius: 50%;
+  flex-shrink: 0;
 `;
 
 const EmptyAction = styled(Link)`
@@ -220,11 +251,56 @@ const ActionButtonContainer = styled.div`
   border-top: 1px solid var(--border-color);
 `;
 
+// Skeleton do card de estatística: espelha StatIcon (32px) + StatLabel (~14px)
+// + StatValue (2.5rem), pra ocupar exatamente o mesmo espaço do card real.
+const StatCardSkeleton: React.FC = () => (
+  <StatCard $accentColor="var(--border-color)" aria-hidden="true">
+    <StatHeader>
+      <SkeletonCircle $size="32px" />
+      <SkeletonBar $width="65%" $height="14px" />
+    </StatHeader>
+    <SkeletonBar $width="45%" $height="2.5rem" />
+  </StatCard>
+);
+
+const VisuallyHidden = styled.span`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+`;
+
+// Skeleton de uma lista de ItemListItem: espelha ItemTitle (~1.1rem) + duas
+// linhas de ItemMeta (~0.875rem cada), no mesmo número de itens esperado.
+// O texto de status fica só para leitor de tela; os bars são decorativos.
+const ItemsListSkeleton: React.FC<{ count?: number; label: string }> = ({ count = 3, label }) => (
+  <div role="status" aria-busy="true">
+    <VisuallyHidden>{label}</VisuallyHidden>
+    <ItemsList aria-hidden="true">
+      {Array.from({ length: count }).map((_, index) => (
+        <ItemListItem key={index}>
+          <SkeletonBar $width="70%" $height="1.1rem" $marginBottom="10px" />
+          <ItemMeta>
+            <SkeletonBar $width="40%" $height="0.875rem" />
+            <SkeletonBar $width="22%" $height="0.875rem" />
+          </ItemMeta>
+          <ItemMeta>
+            <SkeletonBar $width="35%" $height="0.875rem" />
+          </ItemMeta>
+        </ItemListItem>
+      ))}
+    </ItemsList>
+  </div>
+);
+
 const DashboardPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { livros, total: livrosTotal, isLoading: livrosLoading } = useSelector((state: RootState) => state.livros);
   const { categorias } = useSelector((state: RootState) => state.categorias);
-  const { usuarios } = useSelector((state: RootState) => state.usuarios);
+  const { usuarios, isLoading: usuariosLoading } = useSelector((state: RootState) => state.usuarios);
   const { emprestimos, isLoading: emprestimosLoading } = useSelector((state: RootState) => state.emprestimos);
   const { user } = useAuth();
 
@@ -397,69 +473,92 @@ const DashboardPage: React.FC = () => {
       <StatsGrid>
         {user?.tipo === 'leitor' ? (
           /* Mostrar estatísticas específicas para leitores */
-          <>
-            <StatCard $accentColor="var(--primary-color)">
-              <StatHeader>
-                <StatIcon $bgColor="var(--primary-color)">
-                  <FiBook size={18} />
-                </StatIcon>
-                <StatLabel>Livros Adquiridos Recentemente</StatLabel>
-              </StatHeader>
-              <StatValue>{stats.readerBorrowedBooksCount}</StatValue>
-            </StatCard>
+          emprestimosLoading ? (
+            <>
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </>
+          ) : (
+            <>
+              <StatCard $accentColor="var(--primary-color)">
+                <StatHeader>
+                  <StatIcon $bgColor="var(--primary-color)">
+                    <FiBook size={18} />
+                  </StatIcon>
+                  <StatLabel>Livros Adquiridos Recentemente</StatLabel>
+                </StatHeader>
+                <StatValue>{stats.readerBorrowedBooksCount}</StatValue>
+              </StatCard>
 
-            <StatCard $accentColor="var(--success-color)">
-              <StatHeader>
-                <StatIcon $bgColor="var(--success-color)">
-                  <FiRepeat size={18} />
-                </StatIcon>
-                <StatLabel>Empréstimos Renovados/Pendentes</StatLabel>
-              </StatHeader>
-              <StatValue>{stats.readerActiveLoansCount}</StatValue>
-            </StatCard>
-          </>
+              <StatCard $accentColor="var(--success-color)">
+                <StatHeader>
+                  <StatIcon $bgColor="var(--success-color)">
+                    <FiRepeat size={18} />
+                  </StatIcon>
+                  <StatLabel>Empréstimos Renovados/Pendentes</StatLabel>
+                </StatHeader>
+                <StatValue>{stats.readerActiveLoansCount}</StatValue>
+              </StatCard>
+            </>
+          )
         ) : (
           /* Mostrar estatísticas para administradores */
           <>
-            <StatCard $accentColor="var(--primary-color)">
-              <StatHeader>
-                <StatIcon $bgColor="var(--primary-color)">
-                  <FiBook size={18} />
-                </StatIcon>
-                <StatLabel>Livros no Acervo</StatLabel>
-              </StatHeader>
-              <StatValue>{stats.livrosTotal}</StatValue>
-            </StatCard>
+            {livrosLoading ? (
+              <StatCardSkeleton />
+            ) : (
+              <StatCard $accentColor="var(--primary-color)">
+                <StatHeader>
+                  <StatIcon $bgColor="var(--primary-color)">
+                    <FiBook size={18} />
+                  </StatIcon>
+                  <StatLabel>Livros no Acervo</StatLabel>
+                </StatHeader>
+                <StatValue>{stats.livrosTotal}</StatValue>
+              </StatCard>
+            )}
 
-            <StatCard $accentColor="var(--success-color)">
-              <StatHeader>
-                <StatIcon $bgColor="var(--success-color)">
-                  <FiRepeat size={18} />
-                </StatIcon>
-                <StatLabel>Empréstimos Ativos</StatLabel>
-              </StatHeader>
-              <StatValue>{stats.emprestimosAtivos}</StatValue>
-            </StatCard>
+            {emprestimosLoading ? (
+              <StatCardSkeleton />
+            ) : (
+              <StatCard $accentColor="var(--success-color)">
+                <StatHeader>
+                  <StatIcon $bgColor="var(--success-color)">
+                    <FiRepeat size={18} />
+                  </StatIcon>
+                  <StatLabel>Empréstimos Ativos</StatLabel>
+                </StatHeader>
+                <StatValue>{stats.emprestimosAtivos}</StatValue>
+              </StatCard>
+            )}
 
-            <StatCard $accentColor="var(--danger-color)">
-              <StatHeader>
-                <StatIcon $bgColor="var(--danger-color)">
-                  <FiAlertTriangle size={18} />
-                </StatIcon>
-                <StatLabel>Devoluções Atrasadas</StatLabel>
-              </StatHeader>
-              <StatValue>{stats.emprestimosAtrasados}</StatValue>
-            </StatCard>
+            {emprestimosLoading ? (
+              <StatCardSkeleton />
+            ) : (
+              <StatCard $accentColor="var(--danger-color)">
+                <StatHeader>
+                  <StatIcon $bgColor="var(--danger-color)">
+                    <FiAlertTriangle size={18} />
+                  </StatIcon>
+                  <StatLabel>Devoluções Atrasadas</StatLabel>
+                </StatHeader>
+                <StatValue>{stats.emprestimosAtrasados}</StatValue>
+              </StatCard>
+            )}
 
-            <StatCard $accentColor="var(--info-color)">
-              <StatHeader>
-                <StatIcon $bgColor="var(--info-color)">
-                  <FiUsers size={18} />
-                </StatIcon>
-                <StatLabel>Usuários Ativos</StatLabel>
-              </StatHeader>
-              <StatValue>{stats.usuariosAtivos}</StatValue>
-            </StatCard>
+            {usuariosLoading ? (
+              <StatCardSkeleton />
+            ) : (
+              <StatCard $accentColor="var(--info-color)">
+                <StatHeader>
+                  <StatIcon $bgColor="var(--info-color)">
+                    <FiUsers size={18} />
+                  </StatIcon>
+                  <StatLabel>Usuários Ativos</StatLabel>
+                </StatHeader>
+                <StatValue>{stats.usuariosAtivos}</StatValue>
+              </StatCard>
+            )}
           </>
         )}
       </StatsGrid>
@@ -472,7 +571,7 @@ const DashboardPage: React.FC = () => {
               <SectionTitle>Meus Empréstimos Recentes</SectionTitle>
               <RecentItemsCard>
                 {emprestimosLoading ? (
-                  <LoadingMessage aria-live="polite" aria-busy="true">Carregando empréstimos...</LoadingMessage>
+                  <ItemsListSkeleton label="Carregando empréstimos..." />
                 ) : emprestimosRecentesDoLeitor.length > 0 ? (
                   <ItemsList>
                     {emprestimosRecentesDoLeitor.map((emprestimo) => {
@@ -516,7 +615,7 @@ const DashboardPage: React.FC = () => {
               <SectionTitle>Próximas Devoluções</SectionTitle>
               <RecentItemsCard>
                 {emprestimosLoading ? (
-                  <LoadingMessage aria-live="polite" aria-busy="true">Carregando devoluções...</LoadingMessage>
+                  <ItemsListSkeleton label="Carregando devoluções..." />
                 ) : devolucoesPróximasDoLeitor.length > 0 ? (
                   <ItemsList>
                     {devolucoesPróximasDoLeitor.map((emprestimo) => {
@@ -565,7 +664,7 @@ const DashboardPage: React.FC = () => {
               <SectionTitle>Meus Livros Emprestados</SectionTitle>
               <RecentItemsCard>
                 {emprestimosLoading ? (
-                  <LoadingMessage aria-live="polite" aria-busy="true">Carregando histórico...</LoadingMessage>
+                  <ItemsListSkeleton label="Carregando histórico..." />
                 ) : livrosEmprestados.length > 0 ? (
                   <ItemsList>
                     {livrosEmprestados.map((livro) => (
@@ -607,7 +706,7 @@ const DashboardPage: React.FC = () => {
               <SectionTitle>Empréstimos Recentes</SectionTitle>
               <RecentItemsCard>
                 {emprestimosLoading ? (
-                  <LoadingMessage aria-live="polite" aria-busy="true">Carregando empréstimos...</LoadingMessage>
+                  <ItemsListSkeleton label="Carregando empréstimos..." />
                 ) : emprestimosRecentes.length > 0 ? (
                   <ItemsList>
                     {emprestimosRecentes.map((emprestimo) => {
@@ -664,7 +763,7 @@ const DashboardPage: React.FC = () => {
               <SectionTitle>Novos Livros Catalogados</SectionTitle>
               <RecentItemsCard>
                 {livrosLoading ? (
-                  <LoadingMessage aria-live="polite" aria-busy="true">Carregando livros...</LoadingMessage>
+                  <ItemsListSkeleton label="Carregando livros..." />
                 ) : livrosRecentes.length > 0 ? (
                   <ItemsList>
                     {livrosRecentes.map((livro) => {
@@ -715,7 +814,7 @@ const DashboardPage: React.FC = () => {
               <SectionTitle>Devoluções Atrasadas</SectionTitle>
               <RecentItemsCard>
                 {emprestimosLoading ? (
-                  <LoadingMessage aria-live="polite" aria-busy="true">Carregando atrasos...</LoadingMessage>
+                  <ItemsListSkeleton label="Carregando atrasos..." />
                 ) : emprestimosAtrasados.length > 0 ? (
                   <ItemsList>
                     {emprestimosAtrasados.map((emprestimo) => {
@@ -743,7 +842,9 @@ const DashboardPage: React.FC = () => {
                               Devolução: {formatDate(emprestimo.dataPrevistaDevolucao)}
                             </div>
                             <div>
-                              {emprestimo.multa ? `Multa: R$ ${Number(emprestimo.multa).toFixed(2)}` : ''}
+                              {Number.isFinite(Number(emprestimo.multa)) && Number(emprestimo.multa) > 0
+                                ? `Multa: R$ ${Number(emprestimo.multa).toFixed(2)}`
+                                : ''}
                             </div>
                           </ItemMeta>
                         </ItemListItem>
