@@ -15,6 +15,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import Card from '../../components/ui/Card';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { toast } from 'react-toastify';
 
 // Interface estendida para incluir o campo confirmarSenha
@@ -41,6 +42,13 @@ const Form = styled.form`
   display: flex;
   flex-direction: column;
   gap: 20px;
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
 `;
 
 const FormRow = styled.div`
@@ -181,7 +189,11 @@ const UsuarioFormPage: React.FC = () => {
   ];
   
   if (usuarioLoading && isEditMode) {
-    return <div role="status" aria-live="polite">Carregando...</div>;
+    return (
+      <LoadingContainer>
+        <LoadingSpinner size="medium" message="Carregando usuário..." />
+      </LoadingContainer>
+    );
   }
   
   return (

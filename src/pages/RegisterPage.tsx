@@ -8,6 +8,7 @@ import { AppDispatch } from '../store';
 import { Usuario } from '../types';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { toast } from 'react-toastify';
 
 const RegisterContainer = styled.div`
@@ -150,9 +151,7 @@ const RegisterPage: React.FC = () => {
   if (loading) {
     return (
       <RegisterContainer>
-        <div style={{ textAlign: 'center' }}>
-          <p>Carregando...</p>
-        </div>
+        <LoadingSpinner size="large" message="Carregando..." />
       </RegisterContainer>
     );
   }

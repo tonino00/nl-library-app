@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled, { css } from 'styled-components';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import LoadingSpinner from './LoadingSpinner';
 
 export interface Column<T> {
   header: string;
@@ -371,7 +372,7 @@ function TableInner<T>({
           {isLoading ? (
             <LoadingRow>
               <td colSpan={columns.length} data-label="">
-                <span aria-live="polite">Carregando...</span>
+                <LoadingSpinner size="small" showLogo={false} message="Carregando..." />
               </td>
             </LoadingRow>
           ) : data.length > 0 ? (

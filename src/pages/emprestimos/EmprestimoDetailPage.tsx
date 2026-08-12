@@ -13,6 +13,7 @@ import { AppDispatch, RootState } from '../../store';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { toast } from 'react-toastify';
 import { getStatusColorVars, getStatusLabel } from '../../utils/statusEmprestimo';
 
@@ -22,6 +23,13 @@ const PageHeader = styled.div`
   margin-bottom: 20px;
   gap: 15px;
   flex-wrap: wrap;
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
 `;
 
 const BackButton = styled(Button)`
@@ -355,7 +363,11 @@ const EmprestimoDetailPage: React.FC = () => {
   };
   
   if (isLoading) {
-    return <div role="status" aria-live="polite">Carregando detalhes do empréstimo...</div>;
+    return (
+      <LoadingContainer>
+        <LoadingSpinner size="medium" message="Carregando detalhes do empréstimo..." />
+      </LoadingContainer>
+    );
   }
 
   if (!emprestimo) {

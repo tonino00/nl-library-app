@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import styled from 'styled-components';
 import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import LoadingSpinner from '../ui/LoadingSpinner';
 
 const LayoutContainer = styled.div`
   display: flex;
@@ -30,6 +31,15 @@ const Content = styled.main<ContentProps>`
   }
 `;
 
+// Ocupa a área de conteúdo enquanto uma página troca de rota, sem empurrar o
+// layout (altura mínima igual à de uma tela cheia de conteúdo).
+const ContentLoading = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+`;
+
 const Layout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
@@ -43,7 +53,15 @@ const Layout: React.FC = () => {
       <Sidebar isOpen={isSidebarOpen} />
       <Content $isSidebarOpen={isSidebarOpen}>
         <div className="container">
-          <Outlet />
+          <Suspense
+            fallback={
+              <ContentLoading>
+                <LoadingSpinner size="large" showLogo={false} message="Carregando..." />
+              </ContentLoading>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </div>
       </Content>
     </LayoutContainer>

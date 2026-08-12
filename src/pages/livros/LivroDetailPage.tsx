@@ -14,6 +14,7 @@ import { AppDispatch, RootState } from "../../store";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import Table, { Column } from "../../components/ui/Table";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { Emprestimo } from "../../types";
 
 const PageHeader = styled.div`
@@ -22,6 +23,13 @@ const PageHeader = styled.div`
   margin-bottom: 20px;
   gap: 15px;
   flex-wrap: wrap;
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
 `;
 
 const BackButton = styled(Button)`
@@ -239,7 +247,11 @@ const LivroDetailPage: React.FC = () => {
   ];
 
   if (livroLoading) {
-    return <div role="status" aria-live="polite">Carregando detalhes do livro...</div>;
+    return (
+      <LoadingContainer>
+        <LoadingSpinner size="medium" message="Carregando detalhes do livro..." />
+      </LoadingContainer>
+    );
   }
 
   if (!livro) {
