@@ -10,6 +10,10 @@ const CACHE_KEY = 'emprestimos';
 const CACHE_TTL_MS = 30_000;
 
 const cachedEmprestimos = loadCachedData<Emprestimo[]>(CACHE_KEY, CACHE_TTL_MS);
+// Array vazio é "truthy" em JS: sem essa checagem de length, uma lista cacheada
+// vazia (ex.: sessão anterior sem empréstimos no momento) é tratada como "já
+// carregada" e o fetch seguinte é pulado silenciosamente, mesmo com dados novos no servidor.
+const temCacheValido = !!cachedEmprestimos && cachedEmprestimos.length > 0;
 
 // Estado inicial: reidrata de um reload recente antes de assumir estado vazio
 const initialState: EmprestimoState = {
@@ -17,8 +21,8 @@ const initialState: EmprestimoState = {
   emprestimo: null,
   isLoading: false,
   error: null,
-  lastFetched: cachedEmprestimos ? new Date().toISOString() : null,
-  isDataLoaded: !!cachedEmprestimos,
+  lastFetched: temCacheValido ? new Date().toISOString() : null,
+  isDataLoaded: temCacheValido,
 };
 
 // Async thunks
@@ -217,6 +221,10 @@ const emprestimoSlice = createSlice({
       .addCase(fetchEmprestimosByUsuario.fulfilled, (state, action: PayloadAction<Emprestimo[]>) => {
         state.isLoading = false;
         state.emprestimos = action.payload;
+        // Esta é uma visão filtrada (só de um usuário), não a listagem completa.
+        // Invalida isDataLoaded para forçar um fetch real na próxima vez que a
+        // tela de Empréstimos for aberta, em vez de reaproveitar essa lista parcial.
+        state.isDataLoaded = false;
       })
       .addCase(fetchEmprestimosByUsuario.rejected, (state, action) => {
         state.isLoading = false;
@@ -231,6 +239,10 @@ const emprestimoSlice = createSlice({
       .addCase(fetchEmprestimosByLivro.fulfilled, (state, action: PayloadAction<Emprestimo[]>) => {
         state.isLoading = false;
         state.emprestimos = action.payload;
+        // Esta é uma visão filtrada (só de um livro), não a listagem completa.
+        // Invalida isDataLoaded para forçar um fetch real na próxima vez que a
+        // tela de Empréstimos for aberta, em vez de reaproveitar essa lista parcial.
+        state.isDataLoaded = false;
       })
       .addCase(fetchEmprestimosByLivro.rejected, (state, action) => {
         state.isLoading = false;
@@ -332,6 +344,10 @@ const emprestimoSlice = createSlice({
       .addCase(getAtrasadosEmprestimos.fulfilled, (state, action: PayloadAction<Emprestimo[]>) => {
         state.isLoading = false;
         state.emprestimos = action.payload;
+        // Esta é uma visão filtrada (só atrasados), não a listagem completa.
+        // Invalida isDataLoaded para forçar um fetch real na próxima vez que a
+        // tela de Empréstimos for aberta, em vez de reaproveitar essa lista parcial.
+        state.isDataLoaded = false;
       })
       .addCase(getAtrasadosEmprestimos.rejected, (state, action) => {
         state.isLoading = false;

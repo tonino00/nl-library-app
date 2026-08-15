@@ -10,6 +10,9 @@ const CACHE_KEY = 'usuarios';
 const CACHE_TTL_MS = 60_000;
 
 const cachedUsuarios = loadCachedData<Usuario[]>(CACHE_KEY, CACHE_TTL_MS);
+// Array vazio é "truthy" em JS: sem essa checagem de length, uma lista cacheada
+// vazia é tratada como "já carregada" e o fetch seguinte é pulado silenciosamente.
+const temCacheValido = !!cachedUsuarios && cachedUsuarios.length > 0;
 
 // Estado inicial: reidrata de um reload recente antes de assumir estado vazio
 const initialState: UsuarioState = {
@@ -17,8 +20,8 @@ const initialState: UsuarioState = {
   usuario: null,
   isLoading: false,
   error: null,
-  lastFetched: cachedUsuarios ? new Date().toISOString() : null,
-  isDataLoaded: !!cachedUsuarios,
+  lastFetched: temCacheValido ? new Date().toISOString() : null,
+  isDataLoaded: temCacheValido,
 };
 
 // Async thunks
