@@ -15,7 +15,8 @@ const AuthChecker: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   useEffect(() => {
     // Verifica se o usuário está autenticado ao carregar a aplicação
-    if (localStorage.getItem('token')) {
+    // (o token é salvo em sessionStorage, ver authService.ts)
+    if (sessionStorage.getItem('token')) {
       dispatch(checkAuth());
     }
   }, [dispatch]);

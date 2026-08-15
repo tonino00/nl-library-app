@@ -9,6 +9,9 @@ const CACHE_KEY = 'categorias';
 const CACHE_TTL_MS = 300_000;
 
 const cachedCategorias = loadCachedData<Categoria[]>(CACHE_KEY, CACHE_TTL_MS);
+// Array vazio é "truthy" em JS: sem essa checagem de length, uma lista cacheada
+// vazia é tratada como "já carregada" e o fetch seguinte é pulado silenciosamente.
+const temCacheValido = !!cachedCategorias && cachedCategorias.length > 0;
 
 // Estado inicial: reidrata de um reload recente antes de assumir estado vazio
 const initialState: CategoriaState = {
@@ -16,8 +19,8 @@ const initialState: CategoriaState = {
   categoria: null,
   isLoading: false,
   error: null,
-  lastFetched: cachedCategorias ? new Date().toISOString() : null,
-  isDataLoaded: !!cachedCategorias,
+  lastFetched: temCacheValido ? new Date().toISOString() : null,
+  isDataLoaded: temCacheValido,
 };
 
 // Async thunks

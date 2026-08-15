@@ -22,6 +22,10 @@ interface CachedLivros {
 // Estado inicial: tenta reidratar de um reload recente antes de aceitar o estado vazio,
 // evitando bater na API de novo se os dados ainda estariam quentes no servidor.
 const cached = loadCachedData<CachedLivros>(CACHE_KEY, CACHE_TTL_MS);
+// Lista vazia dentro do objeto cacheado ainda conta como "sem dados": sem essa
+// checagem, um cache com livros: [] é tratado como "já carregado" e o fetch
+// seguinte é pulado silenciosamente, mesmo com dados novos no servidor.
+const temCacheValido = !!cached && cached.livros.length > 0;
 
 const initialState: LivroState = {
   livros: cached?.livros ?? [],
@@ -29,8 +33,8 @@ const initialState: LivroState = {
   total: cached?.total ?? 0,
   isLoading: false,
   error: null,
-  lastFetched: cached ? new Date().toISOString() : null,
-  isDataLoaded: !!cached,
+  lastFetched: temCacheValido ? new Date().toISOString() : null,
+  isDataLoaded: temCacheValido,
   paginado: {
     livros: [],
     total: 0,
