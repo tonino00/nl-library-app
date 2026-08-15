@@ -139,45 +139,10 @@ export const GlobalStyles = createGlobalStyle`
   .mb-3 { margin-bottom: 1.5rem; }
   .mb-4 { margin-bottom: 2rem; }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --primary-color: #5F8CAF;
-      --secondary-color: #7da8c7;
-      --accent-color: #f5b041;
-      --background-color: #121212;
-      --surface-color: #1e1e1e;
-      --text-color: #e0e0e0;
-      --light-text-color: #a0a0a0;
-      --border-color: #333333;
-      --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-      --hover-bg: #2a2a2a;
-      --active-bg: #2e3a4a;
-      --disabled-bg: #2a2a2a;
-      --table-header-bg: #2a2a2a;
-      --table-striped-bg: rgba(255, 255, 255, 0.03);
-      --table-hover-bg: rgba(95, 140, 175, 0.15);
-      --pagination-bg: #2a2a2a;
-      --pagination-button-bg: #1e1e1e;
-      --pagination-button-hover-bg: #333333;
-
-      --status-pending-bg: #3d2e05;
-      --status-pending-text: #ffe066;
-      --status-active-bg: #0a2e33;
-      --status-active-text: #a5f3fc;
-      --status-success-bg: #0d2e14;
-      --status-success-text: #d1fae5;
-      --status-danger-bg: #3d0a0f;
-      --status-danger-text: #fda4af;
-      --status-urgent-bg: #3d0a0f;
-      --status-urgent-text: #fda4af;
-      --status-neutral-bg: #2a2d30;
-      --status-neutral-text: #cfd4d8;
-
-      --sidebar-gradient-start: #1c2e42;
-      --sidebar-gradient-end: #06090d;
-      --sidebar-border: rgba(255, 255, 255, 0.08);
-    }
-  }
+  /* O app não segue mais o tema escuro do sistema operacional — fica sempre
+     na paleta clara, por preferência explícita (o preto quase puro do dark
+     mode automático prejudicava a leitura). Se um modo escuro for desejado
+     no futuro, deve ser opt-in (toggle no app), não automático via SO. */
 
   @media (prefers-reduced-motion: reduce) {
     * {
