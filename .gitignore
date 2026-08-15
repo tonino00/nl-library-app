@@ -21,3 +21,22 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.claude/
+.vscode/
+.windsurf/
+.devin/
+.gemini/
+.codex/
+.kiro/
+.cursor/
+.claude/
+.agents/
+
+# IDE/agent configs
+.impeccable/
+*.md
+
+# Nota: as pastas de skills (.claude/, .cursor/, .agents/, etc.) precisam estar
+# fora do .gitignore para que o agente consiga ler os arquivos de referência
+# do skill (ex: .claude/skills/impeccable/reference/init.md). Se você quiser
+# evitar que elas subam no commit, basta não fazer `git add` nelas.
