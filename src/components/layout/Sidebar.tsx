@@ -16,6 +16,8 @@ import {
 
 interface SidebarProps {
   isOpen: boolean;
+  // Chamado ao clicar num link — usado pra fechar o drawer no mobile.
+  onNavigate?: () => void;
 }
 
 const SidebarContainer = styled.aside<{ $isOpen: boolean }>`
@@ -24,8 +26,8 @@ const SidebarContainer = styled.aside<{ $isOpen: boolean }>`
   left: 0;
   width: ${({ $isOpen }) => ($isOpen ? '250px' : '70px')};
   height: calc(100vh - 64px);
-  background-color: var(--surface-color);
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(180deg, var(--sidebar-gradient-start) 0%, var(--sidebar-gradient-end) 100%);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
   transition: width 0.3s ease;
   overflow-y: auto;
   z-index: 90;
@@ -34,7 +36,7 @@ const SidebarContainer = styled.aside<{ $isOpen: boolean }>`
     width: 250px;
     transform: translateX(${({ $isOpen }) => ($isOpen ? '0' : '-100%')});
     transition: transform 0.3s ease;
-    box-shadow: ${({ $isOpen }) => ($isOpen ? '2px 0 8px rgba(0, 0, 0, 0.15)' : 'none')};
+    box-shadow: ${({ $isOpen }) => ($isOpen ? '2px 0 8px rgba(0, 0, 0, 0.25)' : 'none')};
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -58,26 +60,27 @@ const StyledNavLink = styled(NavLink)<{ $isopen: string }>`
   display: flex;
   align-items: center;
   padding: 12px 15px;
-  color: var(--text-color);
+  color: var(--sidebar-text);
   text-decoration: none;
   transition: var(--transition);
   border-radius: 6px;
   margin: 0 10px;
-  
+
   &:hover {
-    background-color: var(--hover-bg);
+    background-color: var(--sidebar-hover-bg);
+    color: var(--sidebar-active-text);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--primary-color);
+    outline: 2px solid #ffffff;
     outline-offset: -2px;
     border-radius: 6px;
   }
 
   &.active {
-    background-color: var(--active-bg);
-    color: var(--primary-color);
-    font-weight: 500;
+    background-color: var(--sidebar-active-bg);
+    color: var(--sidebar-active-text);
+    font-weight: 600;
   }
 
   svg {
@@ -94,10 +97,14 @@ const StyledNavLink = styled(NavLink)<{ $isopen: string }>`
 `;
 
 const SectionTitle = styled.div<{ $isopen: string }>`
-  padding: 12px 25px;
-  color: var(--light-text-color);
-  font-size: 0.75rem;
-  font-weight: 500;
+  margin: 8px 15px 4px;
+  padding: 12px 10px 4px;
+  border-top: 1px solid var(--sidebar-border);
+  color: var(--sidebar-text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   display: ${({ $isopen }) => ($isopen === 'true' ? 'block' : 'none')};
 `;
 
@@ -108,8 +115,8 @@ const LogoutButton = styled.button<{ $isopen: string }>`
   margin: 10px;
   padding: 12px 15px;
   border: none;
-  background-color: var(--status-danger-bg);
-  color: var(--danger-color);
+  background-color: rgba(220, 53, 69, 0.25);
+  color: #ffb3ba;
   border-radius: 6px;
   font-family: inherit;
   font-size: 1rem;
@@ -123,7 +130,7 @@ const LogoutButton = styled.button<{ $isopen: string }>`
   }
 
   &:focus-visible {
-    outline: 2px solid var(--danger-color);
+    outline: 2px solid #ffffff;
     outline-offset: 2px;
   }
 
@@ -140,22 +147,29 @@ const LogoutButton = styled.button<{ $isopen: string }>`
   }
 `;
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onNavigate }) => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
-  
+
   // Verificar se o usuário é admin ou leitor, com segurança de tipo
   const userType = user?.tipo as string | undefined;
   const isAdmin = !!user && (
-    userType === 'admin' || 
+    userType === 'admin' ||
     (typeof userType === 'string' && userType.toLowerCase() === 'admin')
   );
-  
-  
+
+
   const handleLogout = () => {
     dispatch(logout());
     navigate('/login');
+  };
+
+  // Só fecha o drawer no mobile; no desktop a sidebar permanece aberta ao navegar.
+  const handleNavClick = () => {
+    if (window.innerWidth <= 768) {
+      onNavigate?.();
+    }
   };
   
   return (
@@ -163,7 +177,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       <NavList>
        
           <NavItem>
-            <StyledNavLink to="/" $isopen={isOpen.toString()}>
+            <StyledNavLink to="/" $isopen={isOpen.toString()} onClick={handleNavClick}>
               <FiHome size={20} />
               <span>Dashboard</span>
             </StyledNavLink>
@@ -173,7 +187,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         <SectionTitle $isopen={isOpen.toString()}>Catálogo</SectionTitle>
         
         <NavItem>
-          <StyledNavLink to="/livros" $isopen={isOpen.toString()}>
+          <StyledNavLink to="/livros" $isopen={isOpen.toString()} onClick={handleNavClick}>
             <FiBook size={20} />
             <span>Livros</span>
           </StyledNavLink>
@@ -181,7 +195,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         
         {isAdmin && (
           <NavItem>
-            <StyledNavLink to="/categorias" $isopen={isOpen.toString()}>
+            <StyledNavLink to="/categorias" $isopen={isOpen.toString()} onClick={handleNavClick}>
               <FiFolder size={20} />
               <span>Categorias</span>
             </StyledNavLink>
@@ -193,14 +207,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
             <SectionTitle $isopen={isOpen.toString()}>Gerenciamento</SectionTitle>
             
             <NavItem>
-              <StyledNavLink to="/emprestimos" $isopen={isOpen.toString()}>
+              <StyledNavLink to="/emprestimos" $isopen={isOpen.toString()} onClick={handleNavClick}>
                 <FiRepeat size={20} />
                 <span>Empréstimos</span>
               </StyledNavLink>
             </NavItem>
             
             <NavItem>
-              <StyledNavLink to="/usuarios" $isopen={isOpen.toString()}>
+              <StyledNavLink to="/usuarios" $isopen={isOpen.toString()} onClick={handleNavClick}>
                 <FiUsers size={20} />
                 <span>Usuários</span>
               </StyledNavLink>
@@ -213,7 +227,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
             <SectionTitle $isopen={isOpen.toString()}>Administração</SectionTitle>
 
             <NavItem>
-              <StyledNavLink to="/configuracoes" $isopen={isOpen.toString()}>
+              <StyledNavLink to="/configuracoes" $isopen={isOpen.toString()} onClick={handleNavClick}>
                 <FiSettings size={20} />
                 <span>Configurações</span>
               </StyledNavLink>

@@ -1,9 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
-import { Link } from "react-router-dom";
-import { useSelector } from "react-redux";
-import { RootState } from "../../store";
-import { FiMenu, FiX, FiUser } from "../../utils/iconFix";
+import { Link, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState, AppDispatch } from "../../store";
+import { FiMenu, FiX, FiUser, FiSettings, FiLogOut, FiChevronDown } from "../../utils/iconFix";
+import { logout } from "../../features/auth/authSlice";
+import SearchBar from "../ui/SearchBar";
+import DropdownMenu, { DropdownMenuItem } from "../ui/DropdownMenu";
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -31,10 +34,20 @@ const Logo = styled(Link)`
   font-weight: 700;
   color: var(--primary-color);
   text-decoration: none;
-  margin-right: auto;
+  flex-shrink: 0;
 
   span {
     margin-left: 10px;
+  }
+`;
+
+const SearchWrapper = styled.div`
+  flex: 1;
+  max-width: 420px;
+  margin: 0 24px;
+
+  @media (max-width: 768px) {
+    display: none;
   }
 `;
 
@@ -66,15 +79,41 @@ const IconButton = styled.button`
   }
 `;
 
-const UserInfo = styled.div`
+const UserMenuTrigger = styled.button`
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  margin-left: auto;
+  padding: 6px 10px 6px 6px;
+  border: none;
+  background: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  min-height: 44px;
+  transition: var(--transition);
+
+  &:hover {
+    background-color: var(--hover-bg);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 `;
 
 const UserName = styled.span`
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.875rem;
+  color: var(--text-color);
+
+  @media (max-width: 576px) {
+    display: none;
+  }
 `;
 
 const Avatar = styled.div`
@@ -87,34 +126,68 @@ const Avatar = styled.div`
   align-items: center;
   justify-content: center;
   font-weight: 600;
+  overflow: hidden;
+  flex-shrink: 0;
 `;
 
-
-const AvatarPlaceholder = styled.div`
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background-color: var(--primary-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 3rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+const AvatarImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 `;
 
-const ImagePreviewContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+const ChevronIcon = styled(FiChevronDown)`
+  color: var(--light-text-color);
+
+  @media (max-width: 576px) {
+    display: none;
+  }
 `;
 
+// Iniciais/ícone como fallback: se a URL da foto falhar, evita o ícone de
+// imagem quebrada do navegador (mesmo padrão usado nas capas de livro).
+const AvatarContent: React.FC<{ foto?: string; nome?: string }> = ({ foto, nome }) => {
+  const [failed, setFailed] = useState(false);
 
+  if (foto && !failed) {
+    return <AvatarImage src={foto} alt="" onError={() => setFailed(true)} />;
+  }
+  if (nome && nome.charAt(0)) {
+    return <>{nome.charAt(0).toUpperCase()}</>;
+  }
+  return <FiUser size={16} />;
+};
 
 // Usamos React.FC<HeaderProps> para tipar corretamente os props
 const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
   const { user } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
 
+  const handleSearch = (term: string) => {
+    if (term.trim()) {
+      navigate("/livros", { state: { initialSearch: term.trim() } });
+    }
+  };
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate("/login");
+  };
+
+  const menuItems: DropdownMenuItem[] = [
+    {
+      label: "Configurações",
+      icon: <FiSettings size={16} />,
+      onClick: () => navigate("/configuracoes"),
+    },
+    {
+      label: "Sair",
+      icon: <FiLogOut size={16} />,
+      variant: "danger",
+      onClick: handleLogout,
+    },
+  ];
 
   return (
     <HeaderContainer>
@@ -131,25 +204,31 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
         <span>Biblioteca NL</span>
       </Logo>
 
+      <SearchWrapper>
+        <SearchBar onSearch={handleSearch} placeholder="Buscar no acervo..." />
+      </SearchWrapper>
+
       {user && (
-        <UserInfo>
-          <UserName>{user.nome || "Usuário"}</UserName>
-          {user.foto ? (
-            <ImagePreviewContainer>
-              <AvatarPlaceholder>
-                <span style={{marginBottom: '12px'}}>
-                   <FiUser size={16}/>
-                </span>
-              </AvatarPlaceholder>
-            </ImagePreviewContainer>
-          ) : (
-            <Avatar>
-              {user.nome && user.nome.charAt(0)
-                ? user.nome.charAt(0).toUpperCase()
-                : "?"}
-            </Avatar>
+        <DropdownMenu
+          triggerLabel={`Menu de ${user.nome || "usuário"}`}
+          items={menuItems}
+          renderTrigger={({ triggerRef, onClick, isOpen }) => (
+            <UserMenuTrigger
+              ref={triggerRef}
+              type="button"
+              onClick={onClick}
+              aria-haspopup="menu"
+              aria-expanded={isOpen}
+              aria-label={`Menu de ${user.nome || "usuário"}`}
+            >
+              <Avatar>
+                <AvatarContent foto={user.foto} nome={user.nome} />
+              </Avatar>
+              <UserName>{user.nome || "Usuário"}</UserName>
+              <ChevronIcon size={16} />
+            </UserMenuTrigger>
           )}
-        </UserInfo>
+        />
       )}
     </HeaderContainer>
   );

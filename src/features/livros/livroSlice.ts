@@ -99,17 +99,28 @@ export const fetchLivros = createAsyncThunk(
   async (forceRefresh: boolean = false, { getState, rejectWithValue }) => {
     try {
       const state = getState() as { livros: LivroState };
-      
+
       // Se os dados já foram carregados e não é um refresh forçado, não faz nova requisição
       if (state.livros.isDataLoaded && !forceRefresh) {
         return { livros: state.livros.livros, total: state.livros.total, fromCache: true };
       }
-      
+
       const result = await livroService.getAll();
       return { ...result, fromCache: false };
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Erro ao buscar livros');
     }
+  },
+  {
+    // Evita buscar o catálogo inteiro duas vezes em paralelo (ex.: o duplo
+    // mount do React.StrictMode em dev, ou dois componentes montando juntos).
+    condition: (forceRefresh = false, { getState }) => {
+      const state = getState() as { livros: LivroState };
+      if (state.livros.isLoading && !forceRefresh) {
+        return false;
+      }
+      return true;
+    },
   }
 );
 

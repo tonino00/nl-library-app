@@ -41,6 +41,17 @@ export const fetchEmprestimos = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Erro ao buscar empréstimos');
     }
+  },
+  {
+    // Evita buscar a coleção inteira duas vezes em paralelo (ex.: o duplo
+    // mount do React.StrictMode em dev, ou dois componentes montando juntos).
+    condition: (forceRefresh = false, { getState }) => {
+      const state = getState() as { emprestimos: EmprestimoState };
+      if (state.emprestimos.isLoading && !forceRefresh) {
+        return false;
+      }
+      return true;
+    },
   }
 );
 

@@ -40,6 +40,17 @@ export const fetchCategorias = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Erro ao buscar categorias');
     }
+  },
+  {
+    // Evita buscar a lista inteira duas vezes em paralelo (ex.: o duplo mount
+    // do React.StrictMode em dev, ou dois componentes montando juntos).
+    condition: (forceRefresh = false, { getState }) => {
+      const state = getState() as { categorias: CategoriaState };
+      if (state.categorias.isLoading && !forceRefresh) {
+        return false;
+      }
+      return true;
+    },
   }
 );
 

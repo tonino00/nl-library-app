@@ -46,7 +46,17 @@ export const GlobalStyles = createGlobalStyle`
     --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     --border-radius: 8px;
     --transition: all 0.3s ease;
-    --font-family: 'Roboto', sans-serif;
+    --font-family: 'Nunito', sans-serif;
+
+    /* Sidebar: gradiente escuro sobre a cor primária da marca */
+    --sidebar-gradient-start: var(--primary-color);
+    --sidebar-gradient-end: #142338;
+    --sidebar-text: rgba(255, 255, 255, 0.85);
+    --sidebar-text-muted: rgba(255, 255, 255, 0.5);
+    --sidebar-hover-bg: rgba(255, 255, 255, 0.08);
+    --sidebar-active-bg: rgba(255, 255, 255, 0.15);
+    --sidebar-active-text: #ffffff;
+    --sidebar-border: rgba(255, 255, 255, 0.12);
   }
 
   * {
@@ -162,6 +172,10 @@ export const GlobalStyles = createGlobalStyle`
       --status-urgent-text: #fda4af;
       --status-neutral-bg: #2a2d30;
       --status-neutral-text: #cfd4d8;
+
+      --sidebar-gradient-start: #1c2e42;
+      --sidebar-gradient-end: #06090d;
+      --sidebar-border: rgba(255, 255, 255, 0.08);
     }
   }
 
