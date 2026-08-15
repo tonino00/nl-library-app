@@ -40,6 +40,17 @@ export const fetchUsuarios = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Erro ao buscar usuários');
     }
+  },
+  {
+    // Evita buscar a lista inteira duas vezes em paralelo (ex.: o duplo mount
+    // do React.StrictMode em dev, ou dois componentes montando juntos).
+    condition: (forceRefresh = false, { getState }) => {
+      const state = getState() as { usuarios: UsuarioState };
+      if (state.usuarios.isLoading && !forceRefresh) {
+        return false;
+      }
+      return true;
+    },
   }
 );
 

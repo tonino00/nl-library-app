@@ -25,9 +25,11 @@ const StatsGrid = styled.div`
   margin-bottom: 30px;
 `;
 
+// Borda de destaque à esquerda: assinatura visual do tema SB Admin 2,
+// mantida deliberadamente a pedido do usuário (referência de marca explícita).
 const StatCard = styled(Card)<{ $accentColor: string }>`
   padding: 20px;
-  border-bottom: 4px solid ${({ $accentColor }) => $accentColor};
+  border-left: 4px solid ${({ $accentColor }) => $accentColor};
 `;
 
 const StatHeader = styled.div`

@@ -29,7 +29,8 @@ import {
   FiToggleLeft as OrigFiToggleLeft,
   FiBarChart2 as OrigFiBarChart2,
   FiDatabase as OrigFiDatabase,
-  FiRefreshCw as OrigFiRefreshCw
+  FiRefreshCw as OrigFiRefreshCw,
+  FiChevronDown as OrigFiChevronDown
 } from 'react-icons/fi';
 
 // Tipo de props para ícones
@@ -70,3 +71,4 @@ export const FiToggleLeft: React.FC<IconProps> = (props) => <span>{React.createE
 export const FiBarChart2: React.FC<IconProps> = (props) => <span>{React.createElement(OrigFiBarChart2, props)}</span>;
 export const FiDatabase: React.FC<IconProps> = (props) => <span>{React.createElement(OrigFiDatabase, props)}</span>;
 export const FiRefreshCw: React.FC<IconProps> = (props) => <span>{React.createElement(OrigFiRefreshCw, props)}</span>;
+export const FiChevronDown: React.FC<IconProps> = (props) => <span>{React.createElement(OrigFiChevronDown, props)}</span>;

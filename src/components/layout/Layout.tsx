@@ -40,17 +40,46 @@ const ContentLoading = styled.div`
   min-height: 60vh;
 `;
 
+// Fundo escurecido atrás da sidebar no mobile, onde ela vira um drawer sobre
+// o conteúdo: só existe abaixo de 768px, e fecha a sidebar ao ser tocado.
+const Backdrop = styled.div<{ $visible: boolean }>`
+  display: none;
+
+  @media (max-width: 768px) {
+    display: block;
+    position: fixed;
+    inset: 0;
+    top: 64px;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 85;
+    opacity: ${({ $visible }) => ($visible ? 1 : 0)};
+    visibility: ${({ $visible }) => ($visible ? 'visible' : 'hidden')};
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+`;
+
 const Layout: React.FC = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  // No mobile a sidebar é um drawer sobre o conteúdo: começa fechada. No
+  // desktop começa aberta, como sempre foi.
+  const [isSidebarOpen, setIsSidebarOpen] = useState(
+    () => typeof window === 'undefined' || window.innerWidth > 768
+  );
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  const closeSidebar = () => setIsSidebarOpen(false);
+
   return (
     <LayoutContainer>
       <Header toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
-      <Sidebar isOpen={isSidebarOpen} />
+      <Sidebar isOpen={isSidebarOpen} onNavigate={closeSidebar} />
+      <Backdrop $visible={isSidebarOpen} onClick={closeSidebar} aria-hidden="true" />
       <Content $isSidebarOpen={isSidebarOpen}>
         <div className="container">
           <Suspense

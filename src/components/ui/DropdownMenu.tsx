@@ -14,6 +14,16 @@ export interface DropdownMenuItem {
 interface DropdownMenuProps {
   items: DropdownMenuItem[];
   triggerLabel?: string;
+  // Substitui o botão "..." padrão por um gatilho próprio (ex.: avatar de
+  // usuário). O consumidor deve anexar `triggerRef` e `onClick` ao elemento
+  // que renderizar.
+  renderTrigger?: (props: {
+    triggerRef: React.RefObject<HTMLButtonElement | null>;
+    onClick: () => void;
+    isOpen: boolean;
+  }) => React.ReactNode;
+  // Alinha a borda esquerda (em vez da direita) do menu com o gatilho.
+  align?: 'left' | 'right';
 }
 
 const TriggerButton = styled.button`
@@ -95,7 +105,7 @@ const MenuItemButton = styled.button<{ $danger?: boolean }>`
   }
 `;
 
-const DropdownMenu: React.FC<DropdownMenuProps> = ({ items, triggerLabel = 'Mais ações' }) => {
+const DropdownMenu: React.FC<DropdownMenuProps> = ({ items, triggerLabel = 'Mais ações', renderTrigger, align = 'right' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -106,15 +116,17 @@ const DropdownMenu: React.FC<DropdownMenuProps> = ({ items, triggerLabel = 'Mais
   const openMenu = () => {
     const rect = triggerRef.current?.getBoundingClientRect();
     if (rect) {
-      // Alinha a borda direita do menu com a borda direita do gatilho,
-      // com o menu para cima se não houver espaço embaixo.
+      // Alinha o menu (esquerda ou direita) com o gatilho, abrindo pra cima
+      // se não houver espaço embaixo.
       const menuHeight = items.length * 40 + 12;
+      const menuWidth = 180;
       const spaceBelow = window.innerHeight - rect.bottom;
       const top = spaceBelow >= menuHeight + 8 ? rect.bottom + 4 : rect.top - menuHeight - 4;
+      const left = align === 'left' ? rect.left : rect.right - menuWidth;
 
       setPosition({
         top,
-        left: Math.max(8, rect.right - 180),
+        left: Math.max(8, Math.min(left, window.innerWidth - menuWidth - 8)),
       });
     }
     setIsOpen(true);
@@ -156,18 +168,24 @@ const DropdownMenu: React.FC<DropdownMenuProps> = ({ items, triggerLabel = 'Mais
     };
   }, [isOpen, close]);
 
+  const handleTriggerClick = () => (isOpen ? close() : openMenu());
+
   return (
     <>
-      <TriggerButton
-        ref={triggerRef}
-        type="button"
-        aria-haspopup="menu"
-        aria-expanded={isOpen}
-        aria-label={triggerLabel}
-        onClick={() => (isOpen ? close() : openMenu())}
-      >
-        <FiMoreVertical size={18} />
-      </TriggerButton>
+      {renderTrigger ? (
+        renderTrigger({ triggerRef, onClick: handleTriggerClick, isOpen })
+      ) : (
+        <TriggerButton
+          ref={triggerRef}
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={isOpen}
+          aria-label={triggerLabel}
+          onClick={handleTriggerClick}
+        >
+          <FiMoreVertical size={18} />
+        </TriggerButton>
+      )}
 
       {isOpen &&
         createPortal(
