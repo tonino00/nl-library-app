@@ -5,42 +5,65 @@ const ENDPOINT = '/api/usuarios';
 
 export const usuarioService = {
   getAll: async (): Promise<Usuario[]> => {
-    let allUsuarios: Usuario[] = [];
-    let page = 1;
-    let hasMore = true;
-    
-    while (hasMore) {
-      try {
-        // Fazer requisição com parâmetros de paginação
-        const response = await api.get(`${ENDPOINT}?page=${page}&limit=100`);
-        
-        // Verificar se a resposta está no formato { sucesso, data } ou apenas os dados diretos
+    const PAGE_LIMIT = 100;
+
+    try {
+      // Buscar primeira página para obter o total e o primeiro lote
+      const firstResponse = await api.get(`${ENDPOINT}?page=1&limit=${PAGE_LIMIT}`);
+      const firstUsuarios = firstResponse.data.data || firstResponse.data;
+      const total = firstResponse.data.total as number | undefined;
+
+      if (!Array.isArray(firstUsuarios)) {
+        return [];
+      }
+
+      // Se a primeira página já trouxe todos os registros, retorna imediatamente
+      if (firstUsuarios.length < PAGE_LIMIT || (total && firstUsuarios.length >= total)) {
+        return firstUsuarios;
+      }
+
+      // Se o backend retornou total, busca as páginas restantes em paralelo
+      if (total && total > PAGE_LIMIT) {
+        const totalPages = Math.ceil(total / PAGE_LIMIT);
+        const pageRequests: Promise<any>[] = [];
+
+        for (let page = 2; page <= totalPages; page++) {
+          pageRequests.push(api.get(`${ENDPOINT}?page=${page}&limit=${PAGE_LIMIT}`));
+        }
+
+        const responses = await Promise.all(pageRequests);
+        const remainingUsuarios = responses.flatMap(
+          (res) => res.data.data || res.data || []
+        );
+
+        return [...firstUsuarios, ...remainingUsuarios];
+      }
+
+      // Fallback: buscar páginas restantes sequencialmente quando não há total
+      const allUsuarios: Usuario[] = [...firstUsuarios];
+      let page = 2;
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await api.get(`${ENDPOINT}?page=${page}&limit=${PAGE_LIMIT}`);
         const usuarios = response.data.data || response.data;
-        
+
         if (Array.isArray(usuarios) && usuarios.length > 0) {
-          allUsuarios = [...allUsuarios, ...usuarios];
-          
-          // Se retornou menos que 100, provavelmente é a última página
-          if (usuarios.length < 100) {
-            hasMore = false;
-          } else {
-            page++;
-          }
+          allUsuarios.push(...usuarios);
+          hasMore = usuarios.length === PAGE_LIMIT;
+          page++;
         } else {
           hasMore = false;
         }
-      } catch (error) {
-        // Se der erro na paginação, tenta buscar sem parâmetros (fallback)
-        if (page === 1) {
-          const response = await api.get(ENDPOINT);
-          const usuarios = response.data.data || response.data;
-          return Array.isArray(usuarios) ? usuarios : [];
-        }
-        hasMore = false;
       }
+
+      return allUsuarios;
+    } catch (error) {
+      // Se a paginação falhar, tenta buscar sem parâmetros (fallback)
+      const response = await api.get(ENDPOINT);
+      const usuarios = response.data.data || response.data;
+      return Array.isArray(usuarios) ? usuarios : [];
     }
-    
-    return allUsuarios;
   },
 
   getById: async (id: string): Promise<Usuario> => {

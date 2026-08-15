@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import styled from "styled-components";
 import {
@@ -14,6 +14,7 @@ import { AppDispatch, RootState } from "../../store";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import Table, { Column } from "../../components/ui/Table";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { Emprestimo } from "../../types";
 
 const PageHeader = styled.div`
@@ -21,6 +22,14 @@ const PageHeader = styled.div`
   align-items: center;
   margin-bottom: 20px;
   gap: 15px;
+  flex-wrap: wrap;
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
 `;
 
 const BackButton = styled(Button)`
@@ -54,7 +63,7 @@ const DefaultCover = styled.div`
   width: 100%;
   max-width: 250px;
   aspect-ratio: 2/3;
-  background-color: #eee;
+  background-color: var(--disabled-bg);
   border-radius: var(--border-radius);
   display: flex;
   align-items: center;
@@ -110,9 +119,52 @@ const AvailabilityBadge = styled.div<{ $available: boolean }>`
   border-radius: 16px;
   font-weight: 500;
   background-color: ${({ $available }) =>
-    $available ? "rgba(40, 167, 69, 0.2)" : "rgba(220, 53, 69, 0.2)"};
-  color: ${({ $available }) => ($available ? "#155724" : "#721c24")};
+    $available ? "var(--status-success-bg)" : "var(--status-danger-bg)"};
+  color: ${({ $available }) =>
+    $available ? "var(--status-success-text)" : "var(--status-danger-text)"};
   margin-bottom: 20px;
+`;
+
+const InfoGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const LocationItem = styled(InfoItem)`
+  flex-direction: column;
+  align-items: flex-start;
+`;
+
+const LocationHeader = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+`;
+
+const LocationValue = styled.div`
+  word-break: break-word;
+  max-width: 100%;
+  margin-left: 25px;
+  line-height: 1.5;
+`;
+
+const EmprestimoStatus = styled.span<{ $status: string }>`
+  text-transform: capitalize;
+  color: ${({ $status }) => {
+    switch ($status) {
+      case 'atrasado':
+        return 'var(--danger-color)';
+      case 'devolvido':
+        return 'var(--success-color)';
+      default:
+        return 'var(--primary-color)';
+    }
+  }};
 `;
 
 const SectionTitle = styled.h2`
@@ -123,7 +175,6 @@ const SectionTitle = styled.h2`
 
 const LivroDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { livro, isLoading: livroLoading } = useSelector(
     (state: RootState) => state.livros
@@ -184,19 +235,9 @@ const LivroDetailPage: React.FC = () => {
     {
       header: "Status",
       render: (item) => (
-        <span
-          style={{
-            textTransform: "capitalize",
-            color:
-              item.status === "atrasado"
-                ? "var(--danger-color)"
-                : item.status === "devolvido"
-                ? "var(--success-color)"
-                : "var(--primary-color)",
-          }}
-        >
+        <EmprestimoStatus $status={item.status || 'pendente'}>
           {item.status || "pendente"}
-        </span>
+        </EmprestimoStatus>
       ),
     },
     {
@@ -206,21 +247,26 @@ const LivroDetailPage: React.FC = () => {
   ];
 
   if (livroLoading) {
-    return <div>Carregando detalhes do livro...</div>;
+    return (
+      <LoadingContainer>
+        <LoadingSpinner size="medium" message="Carregando detalhes do livro..." />
+      </LoadingContainer>
+    );
   }
 
   if (!livro) {
-    return <div>Livro não encontrado.</div>;
+    return <div role="alert">Livro não encontrado.</div>;
   }
 
   return (
     <div>
       <PageHeader>
         <BackButton
+          as={Link}
+          to="/livros"
           variant="outline"
-          size="small"
+          size="medium"
           leftIcon={<FiArrowLeft />}
-          onClick={() => navigate("/livros")}
         >
           Voltar
         </BackButton>
@@ -230,7 +276,7 @@ const LivroDetailPage: React.FC = () => {
             as={Link}
             to={`/livros/editar/${id}`}
             variant="secondary"
-            size="small"
+            size="medium"
             leftIcon={<FiEdit2 />}
           >
             Editar
@@ -242,9 +288,9 @@ const LivroDetailPage: React.FC = () => {
         <BookDetailsContainer>
           <div>
             {livro.capa ? (
-              <BookCover src={livro.capa} alt={livro.titulo} />
+              <BookCover src={livro.capa} alt={livro.titulo} loading="lazy" width="250" height="375" />
             ) : (
-              <DefaultCover>📕</DefaultCover>
+              <DefaultCover aria-hidden="true">📕</DefaultCover>
             )}
           </div>
 
@@ -258,7 +304,7 @@ const LivroDetailPage: React.FC = () => {
                 : "Indisponível"}
             </AvailabilityBadge>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+            <InfoGrid>
               {/* Coluna da esquerda */}
               <div>
                 {/* <InfoItem>
@@ -288,23 +334,18 @@ const LivroDetailPage: React.FC = () => {
               {/* Coluna da direita */}
               <div>
                 {livro.localizacao && (
-                  <InfoItem style={{ flexDirection: "column", alignItems: "flex-start" }}>
-                    <div style={{ display: "flex", alignItems: "center", marginBottom: "5px" }}>
-                      <FiTag style={{ marginRight: "10px" }} />
+                  <LocationItem>
+                    <LocationHeader>
+                      <FiTag />
                       <InfoLabel>Novo Número de Classificação:</InfoLabel>
-                    </div>
-                    <div style={{ 
-                      wordBreak: "break-word", 
-                      maxWidth: "100%", 
-                      marginLeft: "25px", 
-                      lineHeight: "1.5"
-                    }}>
+                    </LocationHeader>
+                    <LocationValue>
                       {livro.localizacao}
-                    </div>
-                  </InfoItem>
+                    </LocationValue>
+                  </LocationItem>
                 )}
               </div>
-            </div>
+            </InfoGrid>
 
             {livro.descricao && (
               <BookDescription>{livro.descricao}</BookDescription>

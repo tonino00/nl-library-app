@@ -24,9 +24,12 @@ const SearchInput = styled.input`
   transition: var(--transition);
   
   &:focus {
-    outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(46, 90, 136, 0.15);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
   }
 `;
 

@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { FiBook, FiUsers, FiRepeat, FiAlertTriangle } from 'react-icons/fi';
 import { fetchLivros } from '../features/livros/livroSlice';
 import { fetchCategorias } from '../features/categorias/categoriaSlice';
@@ -11,9 +11,10 @@ import { fetchUsuarios } from '../features/usuarios/usuarioSlice';
 import { AppDispatch, RootState } from '../store';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import { getStatusLabel } from '../utils/statusEmprestimo';
 
 const DashboardContainer = styled.div`
-  padding: 20px 0;
+  padding: 20px 16px;
 `;
 
 
@@ -24,42 +25,42 @@ const StatsGrid = styled.div`
   margin-bottom: 30px;
 `;
 
-const StatCard = styled(Card)`
-  padding: 0;
+const StatCard = styled(Card)<{ $accentColor: string }>`
+  padding: 20px;
+  border-bottom: 4px solid ${({ $accentColor }) => $accentColor};
 `;
 
-const StatContent = styled.div`
+const StatHeader = styled.div`
   display: flex;
   align-items: center;
-  padding: 20px;
+  gap: 10px;
+  margin-bottom: 12px;
 `;
 
 const StatIcon = styled.div<{ $bgColor: string }>`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   background-color: ${({ $bgColor }) => $bgColor};
   color: white;
-  margin-right: 20px;
+  flex-shrink: 0;
 `;
 
-const StatInfo = styled.div`
-  flex: 1;
-`;
-
-const StatValue = styled.h2`
-  font-size: 2rem;
+const StatValue = styled.div`
+  font-size: 2.5rem;
+  font-weight: 700;
   color: var(--text-color);
-  margin: 0;
+  line-height: 1;
 `;
 
 const StatLabel = styled.p`
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: var(--light-text-color);
   margin: 0;
+  line-height: 1.3;
 `;
 
 const SectionTitle = styled.h2`
@@ -135,24 +136,36 @@ const StatusBadge = styled.span<{ $status: string }>`
   ${({ $status }) => {
     switch ($status) {
       case 'pendente':
+      case 'renovado':
+      case 'emprestado':
         return `
-          background-color: rgba(255, 193, 7, 0.2);
-          color: #856404;
+          background-color: var(--status-pending-bg);
+          color: var(--status-pending-text);
         `;
       case 'devolvido':
         return `
-          background-color: rgba(40, 167, 69, 0.2);
-          color: #155724;
+          background-color: var(--status-success-bg);
+          color: var(--status-success-text);
         `;
       case 'atrasado':
         return `
-          background-color: rgba(220, 53, 69, 0.2);
-          color: #721c24;
+          background-color: var(--status-danger-bg);
+          color: var(--status-danger-text);
+        `;
+      case 'urgente':
+        return `
+          background-color: var(--status-urgent-bg);
+          color: var(--status-urgent-text);
+        `;
+      case 'expirado':
+        return `
+          background-color: var(--status-neutral-bg);
+          color: var(--status-neutral-text);
         `;
       default:
         return `
-          background-color: rgba(23, 162, 184, 0.2);
-          color: #117a8b;
+          background-color: var(--status-active-bg);
+          color: var(--status-active-text);
         `;
     }
   }}
@@ -164,6 +177,73 @@ const NoItems = styled.div`
   color: var(--light-text-color);
 `;
 
+const shimmer = keyframes`
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+`;
+
+// Placeholder de conteúdo: cada bar/circle é dimensionado igual ao elemento
+// real que vai substituir, pra não pular de tamanho quando os dados chegam.
+const SkeletonBase = styled.div`
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--disabled-bg) 25%,
+    var(--hover-bg) 50%,
+    var(--disabled-bg) 75%
+  );
+  background-size: 200% 100%;
+  animation: ${shimmer} 1.6s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    background: var(--disabled-bg);
+  }
+`;
+
+const SkeletonBar = styled(SkeletonBase)<{ $width?: string; $height?: string; $marginBottom?: string }>`
+  width: ${({ $width }) => $width || '100%'};
+  height: ${({ $height }) => $height || '14px'};
+  margin-bottom: ${({ $marginBottom }) => $marginBottom || '0'};
+`;
+
+const SkeletonCircle = styled(SkeletonBase)<{ $size: string }>`
+  width: ${({ $size }) => $size};
+  height: ${({ $size }) => $size};
+  border-radius: 50%;
+  flex-shrink: 0;
+`;
+
+const EmptyAction = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 8px 16px;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: var(--transition);
+
+  &:hover {
+    background-color: var(--primary-color);
+    color: white;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+`;
+
 const ActionButtonContainer = styled.div`
   padding: 15px;
   text-align: center;
@@ -171,63 +251,85 @@ const ActionButtonContainer = styled.div`
   border-top: 1px solid var(--border-color);
 `;
 
+// Skeleton do card de estatística: espelha StatIcon (32px) + StatLabel (~14px)
+// + StatValue (2.5rem), pra ocupar exatamente o mesmo espaço do card real.
+const StatCardSkeleton: React.FC = () => (
+  <StatCard $accentColor="var(--border-color)" aria-hidden="true">
+    <StatHeader>
+      <SkeletonCircle $size="32px" />
+      <SkeletonBar $width="65%" $height="14px" />
+    </StatHeader>
+    <SkeletonBar $width="45%" $height="2.5rem" />
+  </StatCard>
+);
+
+const VisuallyHidden = styled.span`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+`;
+
+// Skeleton de uma lista de ItemListItem: espelha ItemTitle (~1.1rem) + duas
+// linhas de ItemMeta (~0.875rem cada), no mesmo número de itens esperado.
+// O texto de status fica só para leitor de tela; os bars são decorativos.
+const ItemsListSkeleton: React.FC<{ count?: number; label: string }> = ({ count = 3, label }) => (
+  <div role="status" aria-busy="true">
+    <VisuallyHidden>{label}</VisuallyHidden>
+    <ItemsList aria-hidden="true">
+      {Array.from({ length: count }).map((_, index) => (
+        <ItemListItem key={index}>
+          <SkeletonBar $width="70%" $height="1.1rem" $marginBottom="10px" />
+          <ItemMeta>
+            <SkeletonBar $width="40%" $height="0.875rem" />
+            <SkeletonBar $width="22%" $height="0.875rem" />
+          </ItemMeta>
+          <ItemMeta>
+            <SkeletonBar $width="35%" $height="0.875rem" />
+          </ItemMeta>
+        </ItemListItem>
+      ))}
+    </ItemsList>
+  </div>
+);
+
 const DashboardPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { livros, total: livrosTotal, isLoading: livrosLoading } = useSelector((state: RootState) => state.livros);
-  const { categorias, isLoading: categoriasLoading } = useSelector((state: RootState) => state.categorias);
+  const { categorias } = useSelector((state: RootState) => state.categorias);
   const { usuarios, isLoading: usuariosLoading } = useSelector((state: RootState) => state.usuarios);
   const { emprestimos, isLoading: emprestimosLoading } = useSelector((state: RootState) => state.emprestimos);
   const { user } = useAuth();
 
-  const [stats, setStats] = useState({
-    livrosTotal: 0,
-    livrosDisponiveis: 0,
-    emprestimosAtivos: 0,
-    emprestimosAtrasados: 0,
-    usuariosAtivos: 0,
-    categoriasTotal: 0,
-    // Reader-specific stats
-    readerBorrowedBooksCount: 0,
-    readerActiveLoansCount: 0
-  });
-
   useEffect(() => {
-    // Sempre buscar livros e categorias
     dispatch(fetchLivros(false));
-    dispatch(fetchCategorias());
+    dispatch(fetchCategorias(false));
 
     if (user?.tipo === 'leitor' && user?._id) {
-      // Leitor: buscar apenas empréstimos do próprio usuário
       dispatch(fetchEmprestimosByUsuario(user._id));
     } else if (user?.tipo !== 'leitor') {
-      // Admin/outros: buscar todos os usuários e todos os empréstimos
-      dispatch(fetchUsuarios());
-      dispatch(fetchEmprestimos());
+      dispatch(fetchUsuarios(false));
+      dispatch(fetchEmprestimos(false));
     }
   }, [dispatch, user?.tipo, user?._id]);
-  
-  // Atualizar estatísticas relacionadas apenas a livros/categorias assim que esses dados estiverem prontos
-  useEffect(() => {
-    if (livrosLoading || categoriasLoading) return;
 
-    setStats((prev) => ({
-      ...prev,
+  const stats = useMemo(() => {
+    const base = {
       livrosTotal: livrosTotal || 0,
       livrosDisponiveis: Array.isArray(livros)
         ? livros.reduce((total, livro) => total + (livro.disponiveis || 0), 0)
         : 0,
+      emprestimosAtivos: 0,
+      emprestimosAtrasados: 0,
+      usuariosAtivos: 0,
       categoriasTotal: Array.isArray(categorias) ? categorias.length : 0,
-    }));
-  }, [livros, livrosTotal, categorias, livrosLoading, categoriasLoading]);
+      readerBorrowedBooksCount: 0,
+      readerActiveLoansCount: 0,
+    };
 
-  // Atualizar estatísticas que dependem de empréstimos/usuários separadamente
-  useEffect(() => {
-    const isEmprestimosLoaded = !emprestimosLoading;
-    const isUsuariosLoaded = user?.tipo === 'leitor' ? true : !usuariosLoading;
-
-    if (!isEmprestimosLoaded || !isUsuariosLoaded) return;
-
-    // Calcular empréstimos do leitor atual
     const emprestimosDoLeitorCalc = Array.isArray(emprestimos) && user
       ? emprestimos.filter(emp => {
           if (typeof emp.usuario === 'string') {
@@ -239,134 +341,126 @@ const DashboardPage: React.FC = () => {
         })
       : [];
 
-    // Contar livros únicos emprestados pelo leitor (evitar duplicatas)
-    const livrosUnicos = new Set();
+    const livrosUnicos = new Set<string>();
     emprestimosDoLeitorCalc.forEach(emp => {
-      if (typeof emp.livro === 'string') {
-        livrosUnicos.add(emp.livro);
-      } else if (emp.livro && typeof emp.livro === 'object') {
-        livrosUnicos.add(emp.livro._id);
+      const livroId = typeof emp.livro === 'string' ? emp.livro : emp.livro?._id;
+      if (livroId) {
+        livrosUnicos.add(livroId);
       }
     });
 
-    // Contar empréstimos ativos do leitor (inclui status 'emprestado')
     const emprestimosAtivosDoLeitor = emprestimosDoLeitorCalc.filter(e =>
       ['pendente', 'renovado', 'emprestado'].includes((e.status || '') as string)
     ).length;
 
-    setStats((prev) => {
-      const updated = {
-        ...prev,
+    if (user?.tipo === 'leitor') {
+      return {
+        ...base,
         readerBorrowedBooksCount: livrosUnicos.size,
         readerActiveLoansCount: emprestimosAtivosDoLeitor,
       };
-
-      if (user?.tipo !== 'leitor') {
-        return {
-          ...updated,
-          emprestimosAtivos: Array.isArray(emprestimos)
-            ? emprestimos.filter(e =>
-                ['pendente', 'renovado', 'emprestado'].includes((e.status || '') as string)
-              ).length
-            : 0,
-          emprestimosAtrasados: Array.isArray(emprestimos)
-            ? emprestimos.filter(e => e.status === 'atrasado').length
-            : 0,
-          usuariosAtivos: Array.isArray(usuarios)
-            ? usuarios.filter(u => u.ativo).length
-            : 0,
-        };
-      }
-
-      return {
-        ...updated,
-        emprestimosAtivos: 0,
-        emprestimosAtrasados: 0,
-        usuariosAtivos: 0,
-      };
-    });
-  }, [emprestimos, usuarios, emprestimosLoading, usuariosLoading, user]);
-  
-  // Ordenar empréstimos mais recentes
-  const emprestimosRecentes = Array.isArray(emprestimos) 
-    ? [...emprestimos]
-        .sort((a, b) => new Date(b.dataEmprestimo || '').getTime() - new Date(a.dataEmprestimo || '').getTime())
-        .slice(0, 3)
-    : [];
-    
-  // Filtrar todos os empréstimos do leitor atual (incluindo histórico)
-  const emprestimosDoLeitor = Array.isArray(emprestimos) && user
-    ? emprestimos.filter(emp => {
-        // Verificar se o empréstimo pertence ao usuário atual
-        if (typeof emp.usuario === 'string') {
-          return emp.usuario === user._id;
-        } else if (emp.usuario && typeof emp.usuario === 'object') {
-          return emp.usuario._id === user._id;
-        }
-        return false;
-      })
-    : [];
-    
-  // Empréstimos recentes do leitor
-  const emprestimosRecentesDoLeitor = [...emprestimosDoLeitor]
-    .sort((a, b) => new Date(b.dataEmprestimo || '').getTime() - new Date(a.dataEmprestimo || '').getTime())
-    .slice(0, 3);
-    
-  // Devoluções próximas do leitor (ordenadas por data de devolução mais próxima)
-  const devolucoesPróximasDoLeitor = [...emprestimosDoLeitor]
-    .filter(emp => emp.status === 'pendente' || emp.status === 'renovado')
-    .sort((a, b) => new Date(a.dataPrevistaDevolucao || '').getTime() - new Date(b.dataPrevistaDevolucao || '').getTime())
-    .slice(0, 3);
-    
-  // Agrupar todos os empréstimos do leitor por livro
-  // Criar um mapa para acompanhar a quantidade de empréstimos por livro
-  const livrosEmprestadosMap = new Map();
-  
-  emprestimosDoLeitor.forEach(emprestimo => {
-    const livroId = typeof emprestimo.livro === 'string' ? emprestimo.livro : emprestimo.livro?._id;
-    const livroTitulo = typeof emprestimo.livro === 'string' ? 'Carregando...' : emprestimo.livro?.titulo;
-    const livroAutor = typeof emprestimo.livro === 'string' ? '' : emprestimo.livro?.autor;
-    
-    if (livroId && !livrosEmprestadosMap.has(livroId)) {
-      livrosEmprestadosMap.set(livroId, {
-        id: livroId,
-        titulo: livroTitulo,
-        autor: livroAutor,
-        emprestimos: [emprestimo],
-        quantidade: 1,
-        ultimoEmprestimo: emprestimo.dataEmprestimo
-      });
-    } else if (livroId) {
-      const livroInfo = livrosEmprestadosMap.get(livroId);
-      livroInfo.emprestimos.push(emprestimo);
-      livroInfo.quantidade += 1;
-      
-      // Atualizar data do último empréstimo se for mais recente
-      const dataAtual = new Date(livroInfo.ultimoEmprestimo || '');
-      const dataNova = new Date(emprestimo.dataEmprestimo || '');
-      if (dataNova > dataAtual) {
-        livroInfo.ultimoEmprestimo = emprestimo.dataEmprestimo;
-      }
     }
-  });
+
+    return {
+      ...base,
+      emprestimosAtivos: Array.isArray(emprestimos)
+        ? emprestimos.filter(e =>
+            ['pendente', 'renovado', 'emprestado'].includes((e.status || '') as string)
+          ).length
+        : 0,
+      emprestimosAtrasados: Array.isArray(emprestimos)
+        ? emprestimos.filter(e => e.status === 'atrasado').length
+        : 0,
+      usuariosAtivos: Array.isArray(usuarios)
+        ? usuarios.filter(u => u.ativo).length
+        : 0,
+      readerBorrowedBooksCount: livrosUnicos.size,
+      readerActiveLoansCount: emprestimosAtivosDoLeitor,
+    };
+  }, [livros, livrosTotal, categorias, emprestimos, usuarios, user]);
   
-  // Converter o mapa em array e ordenar por data do último empréstimo (mais recente primeiro)
-  const livrosEmprestados = Array.from(livrosEmprestadosMap.values())
-    .sort((a, b) => new Date(b.ultimoEmprestimo || '').getTime() - new Date(a.ultimoEmprestimo || '').getTime());
+  const emprestimosRecentes = useMemo(() =>
+    Array.isArray(emprestimos)
+      ? [...emprestimos]
+          .sort((a, b) => new Date(b.dataEmprestimo || '').getTime() - new Date(a.dataEmprestimo || '').getTime())
+          .slice(0, 3)
+      : []
+  , [emprestimos]);
 
-  // Ordenar livros mais recentes
-  const livrosRecentes = Array.isArray(livros)
-    ? [...livros]
-        .sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime())
-        .slice(0, 3)
-    : [];
+  const emprestimosDoLeitor = useMemo(() => {
+    if (!Array.isArray(emprestimos) || !user) return [];
+    return emprestimos.filter(emp => {
+      if (typeof emp.usuario === 'string') {
+        return emp.usuario === user._id;
+      } else if (emp.usuario && typeof emp.usuario === 'object') {
+        return emp.usuario._id === user._id;
+      }
+      return false;
+    });
+  }, [emprestimos, user]);
 
-  // Encontrar empréstimos atrasados
-  const emprestimosAtrasados = Array.isArray(emprestimos)
-    ? [...emprestimos]
-        .filter(e => e.status === 'atrasado')
-        .slice(0, 3)
-    : [];
+  const emprestimosRecentesDoLeitor = useMemo(() =>
+    [...emprestimosDoLeitor]
+      .sort((a, b) => new Date(b.dataEmprestimo || '').getTime() - new Date(a.dataEmprestimo || '').getTime())
+      .slice(0, 3)
+  , [emprestimosDoLeitor]);
+
+  const devolucoesPróximasDoLeitor = useMemo(() =>
+    [...emprestimosDoLeitor]
+      .filter(emp => emp.status === 'pendente' || emp.status === 'renovado')
+      .sort((a, b) => new Date(a.dataPrevistaDevolucao || '').getTime() - new Date(b.dataPrevistaDevolucao || '').getTime())
+      .slice(0, 3)
+  , [emprestimosDoLeitor]);
+
+  const livrosEmprestados = useMemo(() => {
+    const livrosEmprestadosMap = new Map();
+
+    emprestimosDoLeitor.forEach(emprestimo => {
+      const livroId = typeof emprestimo.livro === 'string' ? emprestimo.livro : emprestimo.livro?._id;
+      const livroTitulo = typeof emprestimo.livro === 'string' ? 'Carregando...' : emprestimo.livro?.titulo;
+      const livroAutor = typeof emprestimo.livro === 'string' ? '' : emprestimo.livro?.autor;
+
+      if (livroId && !livrosEmprestadosMap.has(livroId)) {
+        livrosEmprestadosMap.set(livroId, {
+          id: livroId,
+          titulo: livroTitulo,
+          autor: livroAutor,
+          emprestimos: [emprestimo],
+          quantidade: 1,
+          ultimoEmprestimo: emprestimo.dataEmprestimo
+        });
+      } else if (livroId) {
+        const livroInfo = livrosEmprestadosMap.get(livroId);
+        livroInfo.emprestimos.push(emprestimo);
+        livroInfo.quantidade += 1;
+
+        const dataAtual = new Date(livroInfo.ultimoEmprestimo || '');
+        const dataNova = new Date(emprestimo.dataEmprestimo || '');
+        if (dataNova > dataAtual) {
+          livroInfo.ultimoEmprestimo = emprestimo.dataEmprestimo;
+        }
+      }
+    });
+
+    return Array.from(livrosEmprestadosMap.values())
+      .sort((a, b) => new Date(b.ultimoEmprestimo || '').getTime() - new Date(a.ultimoEmprestimo || '').getTime());
+  }, [emprestimosDoLeitor]);
+
+  const livrosRecentes = useMemo(() =>
+    Array.isArray(livros)
+      ? [...livros]
+          .sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime())
+          .slice(0, 3)
+      : []
+  , [livros]);
+
+  const emprestimosAtrasados = useMemo(() =>
+    Array.isArray(emprestimos)
+      ? [...emprestimos]
+          .filter(e => e.status === 'atrasado')
+          .slice(0, 3)
+      : []
+  , [emprestimos]);
   
   const formatDate = (date?: Date) => {
     if (!date) return '-';
@@ -376,98 +470,95 @@ const DashboardPage: React.FC = () => {
   
   return (
     <DashboardContainer>
-      {/* <PageTitle>Painel de Controle</PageTitle> */}
-      
       <StatsGrid>
         {user?.tipo === 'leitor' ? (
           /* Mostrar estatísticas específicas para leitores */
-          <>
-            <StatCard>
-              <StatContent>
-                <StatIcon $bgColor="var(--primary-color)">
-                  <FiBook size={24} />
-                </StatIcon>
-                <StatInfo>
-                  <StatValue>{stats.readerBorrowedBooksCount}</StatValue>
-                  <StatLabel>Livros Adquiridos Recentimente</StatLabel>
-                </StatInfo>
-              </StatContent>
-            </StatCard>
-            
-            <StatCard>
-              <StatContent>
-                <StatIcon $bgColor="var(--success-color)">
-                  <FiRepeat size={24} />
-                </StatIcon>
-                <StatInfo>
-                  <StatValue>{stats.readerActiveLoansCount}</StatValue>
-                  <StatLabel>Empréstimos Ronovados/Pendentes</StatLabel>
-                </StatInfo>
-              </StatContent>
-            </StatCard>
-            
-            {/* <StatCard>
-              <StatContent>
-                <StatIcon $bgColor="var(--primary-color)">
-                  <FiBook size={24} />
-                </StatIcon>
-                <StatInfo>
-                  <StatValue>{stats.livrosTotal}</StatValue>
-                  <StatLabel>Livros no Acervo</StatLabel>
-                </StatInfo>
-              </StatContent>
-            </StatCard> */}
-          </>
+          emprestimosLoading ? (
+            <>
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </>
+          ) : (
+            <>
+              <StatCard $accentColor="var(--primary-color)">
+                <StatHeader>
+                  <StatIcon $bgColor="var(--primary-color)">
+                    <FiBook size={18} />
+                  </StatIcon>
+                  <StatLabel>Livros Adquiridos Recentemente</StatLabel>
+                </StatHeader>
+                <StatValue>{stats.readerBorrowedBooksCount}</StatValue>
+              </StatCard>
+
+              <StatCard $accentColor="var(--success-color)">
+                <StatHeader>
+                  <StatIcon $bgColor="var(--success-color)">
+                    <FiRepeat size={18} />
+                  </StatIcon>
+                  <StatLabel>Empréstimos Renovados/Pendentes</StatLabel>
+                </StatHeader>
+                <StatValue>{stats.readerActiveLoansCount}</StatValue>
+              </StatCard>
+            </>
+          )
         ) : (
           /* Mostrar estatísticas para administradores */
           <>
-            <StatCard>
-              <StatContent>
-                <StatIcon $bgColor="var(--primary-color)">
-                  <FiBook size={24} />
-                </StatIcon>
-                <StatInfo>
-                  <StatValue>{stats.livrosTotal}</StatValue>
+            {livrosLoading ? (
+              <StatCardSkeleton />
+            ) : (
+              <StatCard $accentColor="var(--primary-color)">
+                <StatHeader>
+                  <StatIcon $bgColor="var(--primary-color)">
+                    <FiBook size={18} />
+                  </StatIcon>
                   <StatLabel>Livros no Acervo</StatLabel>
-                </StatInfo>
-              </StatContent>
-            </StatCard>
-            
-            <StatCard>
-              <StatContent>
-                <StatIcon $bgColor="var(--success-color)">
-                  <FiRepeat size={24} />
-                </StatIcon>
-                <StatInfo>
-                  <StatValue>{stats.emprestimosAtivos}</StatValue>
+                </StatHeader>
+                <StatValue>{stats.livrosTotal}</StatValue>
+              </StatCard>
+            )}
+
+            {emprestimosLoading ? (
+              <StatCardSkeleton />
+            ) : (
+              <StatCard $accentColor="var(--success-color)">
+                <StatHeader>
+                  <StatIcon $bgColor="var(--success-color)">
+                    <FiRepeat size={18} />
+                  </StatIcon>
                   <StatLabel>Empréstimos Ativos</StatLabel>
-                </StatInfo>
-              </StatContent>
-            </StatCard>
-            
-            <StatCard>
-              <StatContent>
-                <StatIcon $bgColor="var(--danger-color)">
-                  <FiAlertTriangle size={24} />
-                </StatIcon>
-                <StatInfo>
-                  <StatValue>{stats.emprestimosAtrasados}</StatValue>
+                </StatHeader>
+                <StatValue>{stats.emprestimosAtivos}</StatValue>
+              </StatCard>
+            )}
+
+            {emprestimosLoading ? (
+              <StatCardSkeleton />
+            ) : (
+              <StatCard $accentColor="var(--danger-color)">
+                <StatHeader>
+                  <StatIcon $bgColor="var(--danger-color)">
+                    <FiAlertTriangle size={18} />
+                  </StatIcon>
                   <StatLabel>Devoluções Atrasadas</StatLabel>
-                </StatInfo>
-              </StatContent>
-            </StatCard>
-            
-            <StatCard>
-              <StatContent>
-                <StatIcon $bgColor="var(--info-color)">
-                  <FiUsers size={24} />
-                </StatIcon>
-                <StatInfo>
-                  <StatValue>{stats.usuariosAtivos}</StatValue>
+                </StatHeader>
+                <StatValue>{stats.emprestimosAtrasados}</StatValue>
+              </StatCard>
+            )}
+
+            {usuariosLoading ? (
+              <StatCardSkeleton />
+            ) : (
+              <StatCard $accentColor="var(--info-color)">
+                <StatHeader>
+                  <StatIcon $bgColor="var(--info-color)">
+                    <FiUsers size={18} />
+                  </StatIcon>
                   <StatLabel>Usuários Ativos</StatLabel>
-                </StatInfo>
-              </StatContent>
-            </StatCard>
+                </StatHeader>
+                <StatValue>{stats.usuariosAtivos}</StatValue>
+              </StatCard>
+            )}
           </>
         )}
       </StatsGrid>
@@ -479,19 +570,18 @@ const DashboardPage: React.FC = () => {
             <div>
               <SectionTitle>Meus Empréstimos Recentes</SectionTitle>
               <RecentItemsCard>
-                {/* Only show loading if the specific data we need is loading */}
-                {(user?.tipo === 'leitor' && emprestimosLoading) || (user?.tipo !== 'leitor' && (emprestimosLoading || usuariosLoading)) ? (
-                  <NoItems>Carregando...</NoItems>
+                {emprestimosLoading ? (
+                  <ItemsListSkeleton label="Carregando empréstimos..." />
                 ) : emprestimosRecentesDoLeitor.length > 0 ? (
                   <ItemsList>
                     {emprestimosRecentesDoLeitor.map((emprestimo) => {
-                      const livroTitulo = typeof emprestimo.livro === 'string' 
+                      const livroTitulo = typeof emprestimo.livro === 'string'
                         ? 'Carregando...'
                         : emprestimo.livro?.titulo;
-                        
+
                       return (
                         <ItemListItem key={emprestimo._id}>
-                          <ItemTitle>{livroTitulo}</ItemTitle>
+                          <ItemTitle title={livroTitulo}>{livroTitulo}</ItemTitle>
                           <ItemMeta>
                             <div>
                               <ItemDate>
@@ -499,7 +589,7 @@ const DashboardPage: React.FC = () => {
                               </ItemDate>
                             </div>
                             <StatusBadge $status={emprestimo.status || 'pendente'}>
-                              {emprestimo.status || 'pendente'}
+                              {getStatusLabel(emprestimo.status)}
                             </StatusBadge>
                           </ItemMeta>
                           <ItemMeta>
@@ -512,50 +602,41 @@ const DashboardPage: React.FC = () => {
                     })}
                   </ItemsList>
                 ) : (
-                  <NoItems>Você não tem empréstimos recentes</NoItems>
-                )}
-                
-                {/* Hide the button for users with type 'leitor' */}
-                {user?.tipo !== 'leitor' && (
-                  <ActionButtonContainer>
-                  <Button 
-                    as={Link} 
-                    to="/emprestimos" 
-                    variant="outline"
-                  >
-                    Ver todos meus empréstimos
-                  </Button>
-                </ActionButtonContainer>
+                  <NoItems>
+                    Você não tem empréstimos recentes
+                    <br />
+                    <EmptyAction to="/livros">Explorar catálogo</EmptyAction>
+                  </NoItems>
                 )}
               </RecentItemsCard>
             </div>
-            
+
             <div>
               <SectionTitle>Próximas Devoluções</SectionTitle>
               <RecentItemsCard>
-                {(user?.tipo === 'leitor' && emprestimosLoading) || (user?.tipo !== 'leitor' && (emprestimosLoading || usuariosLoading)) ? (
-                  <NoItems>Carregando...</NoItems>
+                {emprestimosLoading ? (
+                  <ItemsListSkeleton label="Carregando devoluções..." />
                 ) : devolucoesPróximasDoLeitor.length > 0 ? (
                   <ItemsList>
                     {devolucoesPróximasDoLeitor.map((emprestimo) => {
-                      const livroTitulo = typeof emprestimo.livro === 'string' 
+                      const livroTitulo = typeof emprestimo.livro === 'string'
                         ? 'Carregando...'
                         : emprestimo.livro?.titulo;
-                        
+
                       // Calcular dias restantes para devolução
                       const dataAtual = new Date();
                       const dataDevolucao = new Date(emprestimo.dataPrevistaDevolucao || '');
                       const diffTempo = dataDevolucao.getTime() - dataAtual.getTime();
                       const diffDias = Math.ceil(diffTempo / (1000 * 3600 * 24));
-                      
+
                       const isUrgent = diffDias <= 3;
-                        
+
                       return (
                         <ItemListItem key={emprestimo._id}>
-                          <ItemTitle>{livroTitulo}</ItemTitle>
+                          <ItemTitle title={livroTitulo}>{livroTitulo}</ItemTitle>
                           <ItemMeta>
                             <div>
-                              <StatusBadge $status={isUrgent ? 'atrasado' : 'pendente'}>
+                              <StatusBadge $status={isUrgent ? 'urgente' : 'pendente'}>
                                 {isUrgent ? `Urgente: ${diffDias} dias` : `${diffDias} dias restantes`}
                               </StatusBadge>
                             </div>
@@ -570,34 +651,25 @@ const DashboardPage: React.FC = () => {
                     })}
                   </ItemsList>
                 ) : (
-                  <NoItems>Você não tem devoluções próximas a vencer</NoItems>
-                )}
-                
-                {/* Hide the button for users with type 'leitor' */}
-                {user?.tipo !== 'leitor' && (
-                  <ActionButtonContainer>
-                  <Button 
-                    as={Link} 
-                    to="/emprestimos" 
-                    variant="outline"
-                  >
-                    Gerenciar devoluções
-                  </Button>
-                </ActionButtonContainer>
+                  <NoItems>
+                    Você não tem devoluções próximas a vencer
+                    <br />
+                    <EmptyAction to="/livros">Explorar catálogo</EmptyAction>
+                  </NoItems>
                 )}
               </RecentItemsCard>
             </div>
             
             <div>
-              <SectionTitle>Livros Devolvidos</SectionTitle>
+              <SectionTitle>Meus Livros Emprestados</SectionTitle>
               <RecentItemsCard>
-                {(user?.tipo === 'leitor' && emprestimosLoading) || (user?.tipo !== 'leitor' && (emprestimosLoading || usuariosLoading)) ? (
-                  <NoItems>Carregando...</NoItems>
+                {emprestimosLoading ? (
+                  <ItemsListSkeleton label="Carregando histórico..." />
                 ) : livrosEmprestados.length > 0 ? (
                   <ItemsList>
                     {livrosEmprestados.map((livro) => (
                       <ItemListItem key={livro.id}>
-                        <ItemTitle>{livro.titulo}</ItemTitle>
+                        <ItemTitle title={livro.titulo}>{livro.titulo}</ItemTitle>
                         <ItemMeta>
                           <div style={{ flexBasis: '100%' }}>Autor Espiritual: {livro.autor || 'Não informado'}</div>
                           <div>Vezes emprestado: {livro.quantidade}</div>
@@ -607,7 +679,7 @@ const DashboardPage: React.FC = () => {
                             Último empréstimo: {formatDate(livro.ultimoEmprestimo)}
                           </div>
                           <div>
-                            {livro.emprestimos.some((e: any) => e.status === 'pendente' || e.status === 'renovado') ? (
+                            {livro.emprestimos.some((e: any) => e.status === 'pendente' || e.status === 'renovado' || e.status === 'emprestado') ? (
                               <StatusBadge $status={'pendente'}>Em andamento</StatusBadge>
                             ) : (
                               <StatusBadge $status={'devolvido'}>Devolvido</StatusBadge>
@@ -618,7 +690,11 @@ const DashboardPage: React.FC = () => {
                     ))}
                   </ItemsList>
                 ) : (
-                  <NoItems>Você ainda não pegou nenhum livro emprestado</NoItems>
+                  <NoItems>
+                    Você ainda não pegou nenhum livro emprestado
+                    <br />
+                    <EmptyAction to="/livros">Explorar catálogo</EmptyAction>
+                  </NoItems>
                 )}
               </RecentItemsCard>
             </div>
@@ -630,21 +706,21 @@ const DashboardPage: React.FC = () => {
               <SectionTitle>Empréstimos Recentes</SectionTitle>
               <RecentItemsCard>
                 {emprestimosLoading ? (
-                  <NoItems>Carregando...</NoItems>
+                  <ItemsListSkeleton label="Carregando empréstimos..." />
                 ) : emprestimosRecentes.length > 0 ? (
                   <ItemsList>
                     {emprestimosRecentes.map((emprestimo) => {
-                      const livroTitulo = typeof emprestimo.livro === 'string' 
+                      const livroTitulo = typeof emprestimo.livro === 'string'
                         ? 'Carregando...'
                         : emprestimo.livro?.titulo;
-                        
+
                       const usuarioNome = typeof emprestimo.usuario === 'string'
                         ? 'Carregando...'
                         : emprestimo.usuario?.nome;
-                        
+
                       return (
                         <ItemListItem key={emprestimo._id}>
-                          <ItemTitle>{livroTitulo}</ItemTitle>
+                          <ItemTitle title={livroTitulo}>{livroTitulo}</ItemTitle>
                           <ItemMeta>
                             <div>Usuário: {usuarioNome}</div>
                             <ItemDate>
@@ -656,7 +732,7 @@ const DashboardPage: React.FC = () => {
                               Devolução: {formatDate(emprestimo.dataPrevistaDevolucao)}
                             </div>
                             <StatusBadge $status={emprestimo.status || 'pendente'}>
-                              {emprestimo.status || 'pendente'}
+                              {getStatusLabel(emprestimo.status)}
                             </StatusBadge>
                           </ItemMeta>
                         </ItemListItem>
@@ -664,13 +740,17 @@ const DashboardPage: React.FC = () => {
                     })}
                   </ItemsList>
                 ) : (
-                  <NoItems>Nenhum empréstimo recente</NoItems>
+                  <NoItems>
+                    Nenhum empréstimo recente
+                    <br />
+                    <EmptyAction to="/emprestimos/novo">Registrar empréstimo</EmptyAction>
+                  </NoItems>
                 )}
-                
+
                 <ActionButtonContainer>
-                  <Button 
-                    as={Link} 
-                    to="/emprestimos" 
+                  <Button
+                    as={Link}
+                    to="/emprestimos"
                     variant="outline"
                   >
                     Ver todos os empréstimos
@@ -678,22 +758,22 @@ const DashboardPage: React.FC = () => {
                 </ActionButtonContainer>
               </RecentItemsCard>
             </div>
-            
+
             <div>
               <SectionTitle>Novos Livros Catalogados</SectionTitle>
               <RecentItemsCard>
                 {livrosLoading ? (
-                  <NoItems>Carregando...</NoItems>
+                  <ItemsListSkeleton label="Carregando livros..." />
                 ) : livrosRecentes.length > 0 ? (
                   <ItemsList>
                     {livrosRecentes.map((livro) => {
                       const categoriaName = typeof livro.categoria === 'string'
                         ? 'Carregando...'
                         : livro.categoria?.nome;
-                        
+
                       return (
                         <ItemListItem key={livro._id}>
-                          <ItemTitle>{livro.titulo}</ItemTitle>
+                          <ItemTitle title={livro.titulo}>{livro.titulo}</ItemTitle>
                           <ItemMeta>
                             <div style={{ flexBasis: '100%' }}>Autor Espiritual: {livro.autor}</div>
                             <div>Ano: {livro.anoPublicacao}</div>
@@ -711,13 +791,17 @@ const DashboardPage: React.FC = () => {
                     })}
                   </ItemsList>
                 ) : (
-                  <NoItems>Nenhum livro cadastrado recentemente</NoItems>
+                  <NoItems>
+                    Nenhum livro cadastrado recentemente
+                    <br />
+                    <EmptyAction to="/livros/novo">Cadastrar livro</EmptyAction>
+                  </NoItems>
                 )}
-                
+
                 <ActionButtonContainer>
-                  <Button 
-                    as={Link} 
-                    to="/livros" 
+                  <Button
+                    as={Link}
+                    to="/livros"
                     variant="outline"
                   >
                     Ver todos os livros
@@ -725,26 +809,26 @@ const DashboardPage: React.FC = () => {
                 </ActionButtonContainer>
               </RecentItemsCard>
             </div>
-            
+
             <div>
-              <SectionTitle>Devoluções Atrasados</SectionTitle>
+              <SectionTitle>Devoluções Atrasadas</SectionTitle>
               <RecentItemsCard>
                 {emprestimosLoading ? (
-                  <NoItems>Carregando...</NoItems>
+                  <ItemsListSkeleton label="Carregando atrasos..." />
                 ) : emprestimosAtrasados.length > 0 ? (
                   <ItemsList>
                     {emprestimosAtrasados.map((emprestimo) => {
-                      const livroTitulo = typeof emprestimo.livro === 'string' 
+                      const livroTitulo = typeof emprestimo.livro === 'string'
                         ? 'Carregando...'
                         : emprestimo.livro?.titulo;
-                        
+
                       const usuarioNome = typeof emprestimo.usuario === 'string'
                         ? 'Carregando...'
                         : emprestimo.usuario?.nome;
-                        
+
                       return (
                         <ItemListItem key={emprestimo._id}>
-                          <ItemTitle>{livroTitulo}</ItemTitle>
+                          <ItemTitle title={livroTitulo}>{livroTitulo}</ItemTitle>
                           <ItemMeta>
                             <div>Usuário: {usuarioNome}</div>
                             <div>
@@ -758,7 +842,9 @@ const DashboardPage: React.FC = () => {
                               Devolução: {formatDate(emprestimo.dataPrevistaDevolucao)}
                             </div>
                             <div>
-                              {emprestimo.multa ? `Multa: R$ ${Number(emprestimo.multa).toFixed(2)}` : ''}
+                              {Number.isFinite(Number(emprestimo.multa)) && Number(emprestimo.multa) > 0
+                                ? `Multa: R$ ${Number(emprestimo.multa).toFixed(2)}`
+                                : ''}
                             </div>
                           </ItemMeta>
                         </ItemListItem>
@@ -766,13 +852,17 @@ const DashboardPage: React.FC = () => {
                     })}
                   </ItemsList>
                 ) : (
-                  <NoItems>Não há empréstimos atrasados</NoItems>
+                  <NoItems>
+                    Não há empréstimos atrasados
+                    <br />
+                    <EmptyAction to="/emprestimos">Ver todos os empréstimos</EmptyAction>
+                  </NoItems>
                 )}
-                
+
                 <ActionButtonContainer>
-                  <Button 
-                    as={Link} 
-                    to="/emprestimos" 
+                  <Button
+                    as={Link}
+                    to="/emprestimos"
                     variant="outline"
                     style={{ color: 'var(--danger-color)' }}
                   >

@@ -16,7 +16,7 @@ const HeaderContainer = styled.header`
   left: 0;
   right: 0;
   height: 64px;
-  background-color: white;
+  background-color: var(--surface-color);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
@@ -41,8 +41,8 @@ const Logo = styled(Link)`
 const IconButton = styled.button`
   background: none;
   border: none;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -53,7 +53,16 @@ const IconButton = styled.button`
   transition: var(--transition);
 
   &:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: var(--hover-bg);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 `;
 
@@ -109,7 +118,12 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
 
   return (
     <HeaderContainer>
-      <IconButton onClick={toggleSidebar} aria-label="Menu">
+      <IconButton
+        onClick={toggleSidebar}
+        aria-label={isSidebarOpen ? 'Fechar menu' : 'Abrir menu'}
+        aria-expanded={isSidebarOpen}
+        aria-controls="main-sidebar"
+      >
         {isSidebarOpen ? <FiX size={24} /> : <FiMenu size={24} />}
       </IconButton>
 
@@ -121,13 +135,11 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
         <UserInfo>
           <UserName>{user.nome || "Usuário"}</UserName>
           {user.foto ? (
-            // <img src={user.foto} alt={user.nome} width="36" height="36" style={{ borderRadius: '50%' }} />
             <ImagePreviewContainer>
               <AvatarPlaceholder>
                 <span style={{marginBottom: '12px'}}>
                    <FiUser size={16}/>
                 </span>
-               
               </AvatarPlaceholder>
             </ImagePreviewContainer>
           ) : (
@@ -137,10 +149,6 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
                 : "?"}
             </Avatar>
           )}
-          {/* <LogoutButton onClick={handleLogout}>
-            <FiLogOut size={16} />
-            <span>Sair</span>
-          </LogoutButton> */}
         </UserInfo>
       )}
     </HeaderContainer>

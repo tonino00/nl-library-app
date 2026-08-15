@@ -12,6 +12,9 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  // Botão quadrado só com ícone (o filho deve ser o ícone). Exige `aria-label`
+  // já que não sobra texto visível para dar nome ao botão.
+  iconOnly?: boolean;
   as?: any;
   to?: string;
 }
@@ -23,7 +26,7 @@ const getButtonStyles = (variant: ButtonVariant) => {
         background-color: var(--primary-color);
         color: white;
         &:hover:not(:disabled) {
-          background-color: var(--secondary-color);
+          background-color: var(--primary-hover-color);
         }
       `;
     case 'secondary':
@@ -31,7 +34,7 @@ const getButtonStyles = (variant: ButtonVariant) => {
         background-color: var(--secondary-color);
         color: white;
         &:hover:not(:disabled) {
-          background-color: #4a7ca9;
+          background-color: var(--secondary-hover-color);
         }
       `;
     case 'success':
@@ -39,7 +42,7 @@ const getButtonStyles = (variant: ButtonVariant) => {
         background-color: var(--success-color);
         color: white;
         &:hover:not(:disabled) {
-          background-color: #218838;
+          background-color: var(--success-hover-color);
         }
       `;
     case 'danger':
@@ -47,7 +50,7 @@ const getButtonStyles = (variant: ButtonVariant) => {
         background-color: var(--danger-color);
         color: white;
         &:hover:not(:disabled) {
-          background-color: #c82333;
+          background-color: var(--danger-hover-color);
         }
       `;
     case 'warning':
@@ -55,7 +58,7 @@ const getButtonStyles = (variant: ButtonVariant) => {
         background-color: var(--warning-color);
         color: var(--text-color);
         &:hover:not(:disabled) {
-          background-color: #e0a800;
+          background-color: var(--warning-hover-color);
         }
       `;
     case 'info':
@@ -63,7 +66,7 @@ const getButtonStyles = (variant: ButtonVariant) => {
         background-color: var(--info-color);
         color: white;
         &:hover:not(:disabled) {
-          background-color: #138496;
+          background-color: var(--info-hover-color);
         }
       `;
     case 'outline':
@@ -122,6 +125,7 @@ const StyledButton = styled.button<{
   $variant?: ButtonVariant;
   $size?: ButtonSize;
   $fullWidth?: boolean;
+  $iconOnly?: boolean;
 }>`
   display: inline-flex;
   align-items: center;
@@ -131,19 +135,37 @@ const StyledButton = styled.button<{
   border: none;
   transition: var(--transition);
   cursor: pointer;
-  
+
   ${({ $variant = 'primary' }) => getButtonStyles($variant)};
   ${({ $size = 'medium' }) => getButtonSize($size)};
-  
+
+  ${({ $iconOnly }) => $iconOnly && css`
+    padding: 0;
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  `}
+
   ${({ $fullWidth }) => $fullWidth && css`
     width: 100%;
   `}
-  
+
   &:disabled {
     opacity: 0.7;
     cursor: not-allowed;
   }
-  
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
   svg {
     vertical-align: middle;
   }
@@ -160,7 +182,7 @@ const IconWrapper = styled.span<{ $position: 'left' | 'right' }>`
 const filterDOMProps = (props: Record<string, any>) => {
   const filteredProps = { ...props };
   // Lista de props personalizadas que devem ser filtradas
-  const propsToFilter = ['fullWidth', 'variant', 'size', 'isLoading', 'leftIcon', 'rightIcon', 'to'];
+  const propsToFilter = ['fullWidth', 'variant', 'size', 'isLoading', 'leftIcon', 'rightIcon', 'to', 'iconOnly'];
   
   propsToFilter.forEach(prop => {
     if (prop in filteredProps) {
@@ -171,39 +193,46 @@ const filterDOMProps = (props: Record<string, any>) => {
   return filteredProps;
 };
 
-const Button: React.FC<ButtonProps> = ({ 
-  children, 
-  variant = 'primary', 
-  size = 'medium', 
+const Button: React.FC<ButtonProps> = ({
+  children,
+  variant = 'primary',
+  size = 'medium',
   isLoading = false,
   leftIcon,
   rightIcon,
+  iconOnly = false,
   disabled,
   as,
   fullWidth,
   to,
-  ...rest 
+  ...rest
 }) => {
   const Component = as || 'button';
-  
+
   // Filtrar as props personalizadas que não devem ser passadas para o DOM
   const domProps = filterDOMProps(rest);
 
   // Preparando props adicionais se o componente for um Link
   const linkProps = to && Component === Link ? { to } : {};
-  
+
+  const isLink = Component === Link;
+
   return (
     <StyledButton
       as={Component}
       $variant={variant}
       $size={size}
       $fullWidth={fullWidth}
-      disabled={disabled || isLoading}
+      $iconOnly={iconOnly}
+      disabled={!isLink && (disabled || isLoading)}
+      aria-disabled={isLink ? disabled || isLoading : undefined}
       {...domProps}
       {...linkProps}
     >
       {isLoading ? (
         'Carregando...'
+      ) : iconOnly ? (
+        children
       ) : (
         <>
           {leftIcon && <IconWrapper $position="left">{leftIcon}</IconWrapper>}

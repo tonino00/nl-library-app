@@ -1,13 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { FiPlus, FiEdit2, FiTrash2, FiEye } from "react-icons/fi";
 import {
-  fetchLivros,
   deleteLivro,
-  fetchLivrosByCategoria,
-  pesquisarLivros,
+  fetchLivrosPaginados,
 } from "../../features/livros/livroSlice";
 import { fetchCategorias } from "../../features/categorias/categoriaSlice";
 import { AppDispatch, RootState } from "../../store";
@@ -17,6 +15,7 @@ import SearchBar from "../../components/ui/SearchBar";
 import Select from "../../components/ui/Select";
 import Card from "../../components/ui/Card";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import DropdownMenu from "../../components/ui/DropdownMenu";
 import { Livro } from "../../types";
 import { toast } from "react-toastify";
 
@@ -24,17 +23,14 @@ const PageHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 20px;
 `;
 
 const PageTitle = styled.h1`
   font-size: 1.75rem;
   color: var(--text-color);
-`;
-
-const ActionButtons = styled.div`
-  display: flex;
-  gap: 10px;
 `;
 
 const SearchContainer = styled.div`
@@ -53,18 +49,22 @@ const FilterContainer = styled.div`
   min-width: 200px;
 `;
 
+const SearchInputWrapper = styled.div`
+  flex-grow: 1;
+`;
+
 const BookCover = styled.img`
   width: 40px;
   height: 60px;
   object-fit: cover;
   border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--box-shadow);
 `;
 
 const DefaultCover = styled.div`
   width: 40px;
   height: 60px;
-  background-color: #eee;
+  background-color: var(--disabled-bg);
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -80,126 +80,105 @@ const AvailabilityStatus = styled.span<{ $available: boolean }>`
   font-size: 0.75rem;
   font-weight: 500;
   background-color: ${({ $available }) =>
-    $available ? "rgba(40, 167, 69, 0.2)" : "rgba(220, 53, 69, 0.2)"};
-  color: ${({ $available }) => ($available ? "#155724" : "#721c24")};
+    $available ? "var(--status-success-bg)" : "var(--status-danger-bg)"};
+  color: ${({ $available }) =>
+    $available ? "var(--status-success-text)" : "var(--status-danger-text)"};
 `;
+
+const BookCoverImg: React.FC<{ src: string; titulo: string }> = ({ src, titulo }) => {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return <DefaultCover aria-hidden="true">📕</DefaultCover>;
+  }
+
+  return (
+    <BookCover
+      src={src}
+      alt={titulo}
+      loading="lazy"
+      width={40}
+      height={60}
+      onError={() => setFailed(true)}
+    />
+  );
+};
+
+const ITEMS_PER_PAGE = 6;
 
 const LivrosListPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { livros, isLoading, isDataLoaded } = useSelector((state: RootState) => state.livros);
+  const navigate = useNavigate();
+  const { paginado, isLoading } = useSelector((state: RootState) => state.livros);
   const { categorias } = useSelector((state: RootState) => state.categorias);
   const { user } = useSelector((state: RootState) => state.auth);
-  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategoria, setSelectedCategoria] = useState("");
-  const [filteredLivros, setFilteredLivros] = useState<Livro[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [livroToDelete, setLivroToDelete] = useState<string>("");
+  const isFirstRender = useRef(true);
 
   // Verificar se o usuário é admin
   const canEdit = user?.tipo === "admin";
 
   useEffect(() => {
-    // Verificar se precisamos forçar uma atualização dos dados
-    const forceRefresh = location.state && (location.state as any).forceRefresh;
+    dispatch(fetchCategorias(false));
+  }, [dispatch]);
 
-    // Buscar livros apenas se não foram carregados ainda ou se forceRefresh for true
-    if (!isDataLoaded || forceRefresh) {
-      dispatch(fetchLivros(forceRefresh || false));
-    }
-    dispatch(fetchCategorias());
-
-    // Limpar o state de navegação para evitar atualizações desnecessárias
-    if (forceRefresh && window.history) {
-      window.history.replaceState({}, "", location.pathname);
-    }
-  }, [dispatch, location, isDataLoaded]);
+  // Busca paginada/filtrada direto no servidor: dispara sempre que página, busca
+  // ou categoria mudam. Volta pra página 1 quando um filtro muda (não quando só a página muda).
+  useEffect(() => {
+    dispatch(
+      fetchLivrosPaginados({
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+        titulo: searchTerm || undefined,
+        categoria: selectedCategoria && selectedCategoria !== "todas" ? selectedCategoria : undefined,
+      })
+    );
+  }, [dispatch, currentPage, searchTerm, selectedCategoria]);
 
   useEffect(() => {
-    // Se uma categoria estiver selecionada e não for 'todas'
-    if (selectedCategoria && selectedCategoria !== "todas") {
-      dispatch(fetchLivrosByCategoria(selectedCategoria));
-    } else if (searchTerm) {
-      dispatch(pesquisarLivros(searchTerm));
-    } else {
-      dispatch(fetchLivros(false));
-    }
-  }, [selectedCategoria, dispatch, searchTerm]);
-
-  // Atualizar a lista filtrada quando os livros mudarem
-  useEffect(() => {
-    if (!Array.isArray(livros)) {
-      setFilteredLivros([]);
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
       return;
     }
-
-    // Se não houver termo de busca, apenas usa a lista completa
-    if (!searchTerm) {
-      setFilteredLivros(livros);
-      return;
-    }
-
-    // Se houver termo de busca mas a lista estiver vazia, faça uma pesquisa local
-    // Isso é útil quando a API não encontra resultados, mas pode haver correspondências
-    // em campos que a API não está considerando, como autorEspiritual
-    if (searchTerm && livros.length === 0) {
-      // Buscar todos os livros para fazer pesquisa local
-      dispatch(fetchLivros(false)).then((action) => {
-        if (fetchLivros.fulfilled.match(action)) {
-          const todosLivros = action.payload.livros;
-          const termoBusca = searchTerm.toLowerCase();
-
-          // Filtrar localmente por autor espiritual e outros campos
-          const resultadosLocais = todosLivros.filter(
-            (livro) =>
-              (livro.autorEspiritual &&
-                livro.autorEspiritual.toLowerCase().includes(termoBusca)) ||
-              livro.titulo.toLowerCase().includes(termoBusca) ||
-              livro.autor.toLowerCase().includes(termoBusca)
-          );
-
-          setFilteredLivros(resultadosLocais);
-        }
-      });
-    } else {
-      setFilteredLivros(livros);
-    }
-  }, [livros, searchTerm, dispatch]);
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategoria]);
 
   const handleSearch = (term: string) => {
-    // Resetar a categoria quando fizer uma nova busca
-    setSelectedCategoria("");
     setSearchTerm(term);
-
-    if (term) {
-      // Primeiro tenta a pesquisa pela API
-      dispatch(pesquisarLivros(term));
-
-      // A lógica de fallback para pesquisa local está no useEffect que monitora livros e searchTerm
-    } else {
-      dispatch(fetchLivros(false));
-    }
   };
 
-  const handleCategoriaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleCategoriaChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedCategoria(e.target.value);
-  };
+  }, []);
 
-  const handleDeleteClick = (id: string) => {
+  const handleDeleteClick = useCallback((id: string) => {
     setLivroToDelete(id);
     setConfirmDeleteOpen(true);
-  };
+  }, []);
 
   const handleConfirmDelete = async () => {
     try {
       await dispatch(deleteLivro(livroToDelete)).unwrap();
       toast.success("Livro excluído com sucesso!");
+      // Recarrega a página atual para refletir a remoção
+      dispatch(
+        fetchLivrosPaginados({
+          page: currentPage,
+          limit: ITEMS_PER_PAGE,
+          titulo: searchTerm || undefined,
+          categoria: selectedCategoria && selectedCategoria !== "todas" ? selectedCategoria : undefined,
+        })
+      );
     } catch (error: any) {
       toast.error(error || "Erro ao excluir livro");
     }
   };
 
-  const formatCategoriaName = (categoria: string | any) => {
+  const formatCategoriaName = useCallback((categoria: string | any) => {
     if (typeof categoria === "string") {
       // Verificar se categorias é um array antes de chamar find
       const foundCategoria = Array.isArray(categorias)
@@ -208,47 +187,51 @@ const LivrosListPage: React.FC = () => {
       return foundCategoria ? foundCategoria.nome : categoria;
     }
     return categoria?.nome || "Não categorizado";
-  };
+  }, [categorias]);
 
-  const columns: Column<Livro>[] = [
+  const columns: Column<Livro>[] = useMemo(() => [
     {
       header: "",
-      width: "50px",
+      width: "56px",
       render: (item) =>
         item.capa ? (
-          <BookCover src={item.capa} alt={item.titulo} />
+          <BookCoverImg src={item.capa} titulo={item.titulo} />
         ) : (
-          <DefaultCover>📕</DefaultCover>
+          <DefaultCover aria-hidden="true">📕</DefaultCover>
         ),
     },
     {
       header: "Título",
       key: "titulo",
-      width: "250px",
+      width: "22%",
     },
     {
       header: "Autor",
       key: "autor",
-      width: "180px",
+      width: "16%",
     },
     {
       header: "Autor Espiritual",
       render: (item) => item.autorEspiritual || "-",
-      width: "220px",
+      width: "14%",
     },
     {
       header: "Categoria",
       render: (item) => formatCategoriaName(item.categoria),
-      width: "140px",
+      width: "13%",
     },
 
     {
       header: "Quantidade",
       render: (item) => <div>{item.quantidade}</div>,
+      width: "90px",
+      align: "center",
     },
 
     {
       header: 'Disponibilidade',
+      width: "130px",
+      align: "center",
       render: (item) => (
         <div>
           <AvailabilityStatus $available={(item.disponiveis || 0) > 0}>
@@ -259,44 +242,37 @@ const LivrosListPage: React.FC = () => {
     },
     {
       header: "Ações",
+      width: "70px",
       render: (item) => (
-        <ActionButtons>
-          <Button
-            as={Link}
-            to={`/livros/${item._id}`}
-            variant="info"
-            size="small"
-            leftIcon={<FiEye size={16} />}
-          >
-            Ver
-          </Button>
-          {canEdit && (
-            <>
-              <Button
-                as={Link}
-                to={`/livros/editar/${item._id}`}
-                variant="secondary"
-                size="small"
-                leftIcon={<FiEdit2 size={16} />}
-              >
-                Editar
-              </Button>
-              <Button
-                variant="danger"
-                size="small"
-                leftIcon={<FiTrash2 size={16} />}
-                onClick={() => item._id && handleDeleteClick(item._id)}
-              >
-                Excluir
-              </Button>
-            </>
-          )}
-        </ActionButtons>
+        <DropdownMenu
+          triggerLabel={`Ações para ${item.titulo}`}
+          items={[
+            {
+              label: "Ver",
+              icon: <FiEye size={16} />,
+              onClick: () => navigate(`/livros/${item._id}`),
+            },
+            ...(canEdit
+              ? [
+                  {
+                    label: "Editar",
+                    icon: <FiEdit2 size={16} />,
+                    onClick: () => navigate(`/livros/editar/${item._id}`),
+                  },
+                  {
+                    label: "Excluir",
+                    icon: <FiTrash2 size={16} />,
+                    variant: "danger" as const,
+                    onClick: () => item._id && handleDeleteClick(item._id),
+                  },
+                ]
+              : []),
+          ]}
+        />
       ),
       align: "right",
-      width: "280px",
     },
-  ];
+  ], [canEdit, formatCategoriaName, handleDeleteClick, navigate]);
 
   return (
     <div>
@@ -316,12 +292,12 @@ const LivrosListPage: React.FC = () => {
 
       <Card>
         <SearchContainer>
-          <div style={{ flexGrow: 1 }}>
+          <SearchInputWrapper>
             <SearchBar
               onSearch={handleSearch}
-              placeholder="Pesquisar por título, autor ou autor espiritual..."
+              placeholder="Pesquisar por título ou autor..."
             />
-          </div>
+          </SearchInputWrapper>
           <FilterContainer>
             <Select
               label="Filtrar por categoria"
@@ -343,14 +319,18 @@ const LivrosListPage: React.FC = () => {
 
         <Table
           columns={columns}
-          data={filteredLivros}
+          data={paginado.livros}
           keyExtractor={(item) => item._id || ""}
-          isLoading={isLoading}
+          isLoading={isLoading || paginado.isLoading}
           emptyMessage="Nenhum livro encontrado"
           hoverable
           striped
           paginated={true}
-          itemsPerPage={6}
+          serverSide
+          itemsPerPage={ITEMS_PER_PAGE}
+          currentPage={currentPage}
+          totalItems={paginado.total}
+          onPageChange={setCurrentPage}
         />
       </Card>
 

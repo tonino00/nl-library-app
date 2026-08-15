@@ -1,20 +1,38 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { categoriaService } from '../../services/categoriaService';
 import { Categoria, CategoriaState } from '../../types';
+import { logout } from '../auth/authSlice';
+import { loadCachedData, saveCachedData, clearCachedData } from '../../utils/persistedCache';
 
-// Estado inicial
+const CACHE_KEY = 'categorias';
+// Alinhado ao TTL do cache Redis de GET /api/categorias no backend (até 5min)
+const CACHE_TTL_MS = 300_000;
+
+const cachedCategorias = loadCachedData<Categoria[]>(CACHE_KEY, CACHE_TTL_MS);
+
+// Estado inicial: reidrata de um reload recente antes de assumir estado vazio
 const initialState: CategoriaState = {
-  categorias: [],
+  categorias: cachedCategorias ?? [],
   categoria: null,
   isLoading: false,
   error: null,
+  lastFetched: cachedCategorias ? new Date().toISOString() : null,
+  isDataLoaded: !!cachedCategorias,
 };
 
 // Async thunks
 export const fetchCategorias = createAsyncThunk(
   'categorias/fetchAll',
-  async (_, { rejectWithValue }) => {
+  async (forceRefresh: boolean = false, { getState, rejectWithValue }) => {
     try {
+      const state = getState() as { categorias: CategoriaState };
+
+      // Se os dados já foram carregados e não é um refresh forçado, não faz nova requisição.
+      // Categorias mudam com pouca frequência e o backend já cacheia essa rota por até 5min.
+      if (state.categorias.isDataLoaded && !forceRefresh) {
+        return state.categorias.categorias;
+      }
+
       return await categoriaService.getAll();
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Erro ao buscar categorias');
@@ -78,6 +96,11 @@ const categoriaSlice = createSlice({
     setSelectedCategoria: (state, action: PayloadAction<Categoria | null>) => {
       state.categoria = action.payload;
     },
+    invalidateCategoriasCache: (state) => {
+      state.isDataLoaded = false;
+      state.lastFetched = null;
+      clearCachedData(CACHE_KEY);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -89,6 +112,9 @@ const categoriaSlice = createSlice({
       .addCase(fetchCategorias.fulfilled, (state, action: PayloadAction<Categoria[]>) => {
         state.isLoading = false;
         state.categorias = action.payload;
+        state.lastFetched = new Date().toISOString();
+        state.isDataLoaded = true;
+        saveCachedData<Categoria[]>(CACHE_KEY, state.categorias);
       })
       .addCase(fetchCategorias.rejected, (state, action) => {
         state.isLoading = false;
@@ -117,6 +143,7 @@ const categoriaSlice = createSlice({
       .addCase(createCategoria.fulfilled, (state, action: PayloadAction<Categoria>) => {
         state.isLoading = false;
         state.categorias.push(action.payload);
+        saveCachedData<Categoria[]>(CACHE_KEY, state.categorias);
       })
       .addCase(createCategoria.rejected, (state, action) => {
         state.isLoading = false;
@@ -134,6 +161,7 @@ const categoriaSlice = createSlice({
           cat._id === action.payload._id ? action.payload : cat
         );
         state.categoria = action.payload;
+        saveCachedData<Categoria[]>(CACHE_KEY, state.categorias);
       })
       .addCase(updateCategoria.rejected, (state, action) => {
         state.isLoading = false;
@@ -151,13 +179,24 @@ const categoriaSlice = createSlice({
         if (state.categoria && state.categoria._id === action.payload) {
           state.categoria = null;
         }
+        saveCachedData<Categoria[]>(CACHE_KEY, state.categorias);
       })
       .addCase(deleteCategoria.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
+      })
+
+      // Invalidar cache quando usuário fizer logout
+      .addCase(logout.fulfilled, (state) => {
+        state.categorias = [];
+        state.categoria = null;
+        state.isDataLoaded = false;
+        state.lastFetched = null;
+        state.error = null;
+        clearCachedData(CACHE_KEY);
       });
   },
 });
 
-export const { clearCategoriaError, setSelectedCategoria } = categoriaSlice.actions;
+export const { clearCategoriaError, setSelectedCategoria, invalidateCategoriasCache } = categoriaSlice.actions;
 export default categoriaSlice.reducer;

@@ -7,6 +7,7 @@ import { login } from '../features/auth/authSlice';
 import { RootState } from '../store';
 import { AppDispatch } from '../store';
 import Input from '../components/ui/Input';
+import PasswordInput from '../components/ui/PasswordInput';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 
@@ -22,7 +23,7 @@ const LoginContainer = styled.div`
   align-items: center;
   justify-content: center;
   flex: 1;
-  padding: 20px 0;
+  padding: 20px;
   background-color: var(--background-color);
 `;
 
@@ -51,9 +52,13 @@ const Form = styled.form`
   flex-direction: column;
 `;
 
+const SubmitButtonWrapper = styled.div`
+  margin-top: 1rem;
+`;
+
 const ErrorMessage = styled.div`
-  color: var(--danger-color);
-  background-color: rgba(220, 53, 69, 0.1);
+  color: var(--status-danger-text);
+  background-color: var(--status-danger-bg);
   padding: 10px;
   border-radius: var(--border-radius);
   margin-bottom: 20px;
@@ -67,14 +72,30 @@ const LoginLinks = styled.div`
   margin-top: 1.5rem;
   text-align: center;
   font-size: 0.9rem;
-  
-  a {
-    color: var(--primary-color);
-    text-decoration: none;
-    
-    &:hover {
-      text-decoration: underline;
-    }
+`;
+
+const LoginLink = styled(Link)`
+  display: inline-block;
+  min-height: 44px;
+  line-height: 44px;
+  padding: 0 8px;
+  color: var(--primary-color);
+  text-decoration: none;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+
+  &:hover {
+    text-decoration: underline;
+    background-color: var(--hover-bg);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 `;
 
@@ -122,58 +143,55 @@ const LoginPage: React.FC = () => {
   return (
     <PageWrapper>
       <LoginContainer>
-      <LoginCard>
-        <div style={{ padding: '2rem' }}>
-          <Logo>
-                <Icon>
-                  <FiBookOpen />
-                </Icon>
+      <LoginCard padding="2rem">
+        <Logo>
+              <Icon>
+                <FiBookOpen />
+              </Icon>
             <p>Sistema de Gerenciamento de Biblioteca</p>
-          </Logo>
-          
-          {error && <ErrorMessage>{error}</ErrorMessage>}
-          
-          <Form onSubmit={handleSubmit}>
-            <Input
-              type="email"
-              name="email"
-              label="Email"
-              placeholder="Digite seu email"
-              value={credentials.email}
-              onChange={handleChange}
-              required
-              fullWidth
-              leftIcon={<FiUser />}
-            />
-            
-            <Input
-              type="password"
-              name="senha"
-              label="Senha"
-              placeholder="Digite sua senha"
-              value={credentials.senha}
-              onChange={handleChange}
-              required
-              fullWidth
-              leftIcon={<FiLock />}
-            />
-            
+        </Logo>
+
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+
+        <Form onSubmit={handleSubmit}>
+          <Input
+            type="email"
+            name="email"
+            label="Email"
+            placeholder="Digite seu email"
+            value={credentials.email}
+            onChange={handleChange}
+            required
+            fullWidth
+            leftIcon={<FiUser />}
+          />
+
+          <PasswordInput
+            name="senha"
+            label="Senha"
+            placeholder="Digite sua senha"
+            value={credentials.senha}
+            onChange={handleChange}
+            required
+            fullWidth
+            leftIcon={<FiLock />}
+          />
+
+          <SubmitButtonWrapper>
             <Button
               type="submit"
               fullWidth
               size="large"
               isLoading={isLoading}
-              style={{ marginTop: '1rem' }}
             >
               Entrar
             </Button>
-            
-            <LoginLinks>
-              <Link to="/registro">Criar uma nova conta</Link>
-              {/* <Link to="/recuperar-senha">Esqueceu sua senha?</Link> */}
-            </LoginLinks>
-          </Form>
-        </div>
+          </SubmitButtonWrapper>
+
+          <LoginLinks>
+            <LoginLink to="/registro">Criar uma nova conta</LoginLink>
+          </LoginLinks>
+        </Form>
       </LoginCard>
     </LoginContainer>
     

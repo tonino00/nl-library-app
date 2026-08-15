@@ -11,7 +11,7 @@ interface CardProps {
 }
 
 const CardContainer = styled.div<{ padding?: string }>`
-  background: white;
+  background-color: var(--surface-color);
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
   overflow: hidden;

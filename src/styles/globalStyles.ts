@@ -6,13 +6,43 @@ export const GlobalStyles = createGlobalStyle`
     --secondary-color: #5F8CAF;
     --accent-color: #F39C12;
     --background-color: #F8F9FA;
+    --surface-color: #FFFFFF;
     --text-color: #333333;
     --light-text-color: #6C757D;
     --danger-color: #DC3545;
     --success-color: #28A745;
     --warning-color: #FFC107;
     --info-color: #17A2B8;
+    --primary-hover-color: #244a6e;
+    --secondary-hover-color: #4a7ca9;
+    --success-hover-color: #218838;
+    --danger-hover-color: #c82333;
+    --warning-hover-color: #e0a800;
+    --info-hover-color: #138496;
     --border-color: #DEE2E6;
+    --hover-bg: #f1f3f5;
+    --active-bg: #e8eef5;
+    --disabled-bg: #f5f5f5;
+    --table-header-bg: #f8f9fa;
+    --table-striped-bg: rgba(0, 0, 0, 0.02);
+    --table-hover-bg: rgba(46, 90, 136, 0.05);
+    --pagination-bg: #f8f9fa;
+    --pagination-button-bg: #ffffff;
+    --pagination-button-hover-bg: #f0f0f0;
+
+    /* Status tokens - text colors chosen for WCAG AA contrast on tinted backgrounds */
+    --status-pending-bg: rgba(255, 193, 7, 0.18);
+    --status-pending-text: #5C4300;
+    --status-active-bg: rgba(23, 162, 184, 0.15);
+    --status-active-text: #0A3A42;
+    --status-success-bg: rgba(40, 167, 69, 0.15);
+    --status-success-text: #0F401A;
+    --status-danger-bg: rgba(220, 53, 69, 0.15);
+    --status-danger-text: #5C161C;
+    --status-urgent-bg: rgba(220, 53, 69, 0.15);
+    --status-urgent-text: #5C161C;
+    --status-neutral-bg: rgba(108, 117, 125, 0.15);
+    --status-neutral-text: #3E4348;
     --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     --border-radius: 8px;
     --transition: all 0.3s ease;
@@ -58,7 +88,7 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   .card {
-    background: white;
+    background-color: var(--surface-color);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     padding: 20px;
@@ -98,6 +128,48 @@ export const GlobalStyles = createGlobalStyle`
   .mb-2 { margin-bottom: 1rem; }
   .mb-3 { margin-bottom: 1.5rem; }
   .mb-4 { margin-bottom: 2rem; }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --primary-color: #5F8CAF;
+      --secondary-color: #7da8c7;
+      --accent-color: #f5b041;
+      --background-color: #121212;
+      --surface-color: #1e1e1e;
+      --text-color: #e0e0e0;
+      --light-text-color: #a0a0a0;
+      --border-color: #333333;
+      --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      --hover-bg: #2a2a2a;
+      --active-bg: #2e3a4a;
+      --disabled-bg: #2a2a2a;
+      --table-header-bg: #2a2a2a;
+      --table-striped-bg: rgba(255, 255, 255, 0.03);
+      --table-hover-bg: rgba(95, 140, 175, 0.15);
+      --pagination-bg: #2a2a2a;
+      --pagination-button-bg: #1e1e1e;
+      --pagination-button-hover-bg: #333333;
+
+      --status-pending-bg: #3d2e05;
+      --status-pending-text: #ffe066;
+      --status-active-bg: #0a2e33;
+      --status-active-text: #a5f3fc;
+      --status-success-bg: #0d2e14;
+      --status-success-text: #d1fae5;
+      --status-danger-bg: #3d0a0f;
+      --status-danger-text: #fda4af;
+      --status-urgent-bg: #3d0a0f;
+      --status-urgent-text: #fda4af;
+      --status-neutral-bg: #2a2d30;
+      --status-neutral-text: #cfd4d8;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+    }
+  }
 `;
 
 export default GlobalStyles;

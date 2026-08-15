@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { fetchCategorias, deleteCategoria } from '../../features/categorias/categoriaSlice';
@@ -10,6 +10,7 @@ import Table, { Column } from '../../components/ui/Table';
 import SearchBar from '../../components/ui/SearchBar';
 import Card from '../../components/ui/Card';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import DropdownMenu from '../../components/ui/DropdownMenu';
 import { Categoria } from '../../types';
 import { toast } from 'react-toastify';
 
@@ -17,6 +18,8 @@ const PageHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 20px;
 `;
 
@@ -25,17 +28,13 @@ const PageTitle = styled.h1`
   color: var(--text-color);
 `;
 
-const ActionButtons = styled.div`
-  display: flex;
-  gap: 10px;
-`;
-
 const SearchContainer = styled.div`
   margin-bottom: 20px;
 `;
 
 const CategoriasListPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const { categorias, isLoading } = useSelector((state: RootState) => state.categorias);
   const { user } = useSelector((state: RootState) => state.auth);
   const location = useLocation();
@@ -56,7 +55,7 @@ const CategoriasListPage: React.FC = () => {
     
     // Buscar categorias apenas se ainda não buscamos ou se forceRefresh for true
     if (forceRefresh || !dataFetchedRef.current) {
-      dispatch(fetchCategorias());
+      dispatch(fetchCategorias(forceRefresh || false));
       dataFetchedRef.current = true;
     }
     
@@ -119,33 +118,27 @@ const CategoriasListPage: React.FC = () => {
     },
     {
       header: 'Ações',
-      render: (item) => (
-        <ActionButtons>
-          {canEdit && (
-            <>
-              <Button
-                as={Link}
-                to={`/categorias/editar/${item._id}`}
-                variant="secondary"
-                size="small"
-                leftIcon={<FiEdit2 size={16} />}
-              >
-                Editar
-              </Button>
-              <Button
-                variant="danger"
-                size="small"
-                leftIcon={<FiTrash2 size={16} />}
-                onClick={() => item._id && handleDeleteClick(item._id)}
-              >
-                Excluir
-              </Button>
-            </>
-          )}
-        </ActionButtons>
-      ),
+      width: '70px',
+      render: (item) =>
+        canEdit ? (
+          <DropdownMenu
+            triggerLabel={`Ações para ${item.nome}`}
+            items={[
+              {
+                label: 'Editar',
+                icon: <FiEdit2 size={16} />,
+                onClick: () => navigate(`/categorias/editar/${item._id}`),
+              },
+              {
+                label: 'Excluir',
+                icon: <FiTrash2 size={16} />,
+                variant: 'danger',
+                onClick: () => item._id && handleDeleteClick(item._id),
+              },
+            ]}
+          />
+        ) : null,
       align: 'right',
-      width: '220px',
     },
   ];
   

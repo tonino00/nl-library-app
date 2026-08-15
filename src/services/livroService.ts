@@ -6,43 +6,69 @@ const ENDPOINT = '/api/livros';
 
 export const livroService = {
   getAll: async (): Promise<{ livros: Livro[]; total?: number }> => {
-    let allLivros: Livro[] = [];
-    let page = 1;
-    let hasMore = true;
-    
-    while (hasMore) {
-      try {
-        // Fazer requisição com parâmetros de paginação
-        const response = await api.get(`${ENDPOINT}?page=${page}&limit=100`);
-        
-        // Verificar se a resposta está no formato { sucesso, data } ou apenas os dados diretos
+    const PAGE_LIMIT = 100;
+
+    try {
+      // Buscar primeira página para obter o total e o primeiro lote
+      const firstResponse = await api.get(`${ENDPOINT}?page=1&limit=${PAGE_LIMIT}`);
+      const firstLivros = firstResponse.data.data || firstResponse.data;
+      const total = firstResponse.data.total as number | undefined;
+
+      if (!Array.isArray(firstLivros)) {
+        return { livros: [], total };
+      }
+
+      // Se a primeira página já trouxe todos os registros, retorna imediatamente
+      if (firstLivros.length < PAGE_LIMIT || (total && firstLivros.length >= total)) {
+        return { livros: firstLivros, total: total ?? firstLivros.length };
+      }
+
+      // Se o backend retornou total, busca as páginas restantes em paralelo
+      if (total && total > PAGE_LIMIT) {
+        const totalPages = Math.ceil(total / PAGE_LIMIT);
+        const pageRequests: Promise<any>[] = [];
+
+        for (let page = 2; page <= totalPages; page++) {
+          pageRequests.push(api.get(`${ENDPOINT}?page=${page}&limit=${PAGE_LIMIT}`));
+        }
+
+        const responses = await Promise.all(pageRequests);
+        const remainingLivros = responses.flatMap(
+          (res) => res.data.data || res.data || []
+        );
+
+        return {
+          livros: [...firstLivros, ...remainingLivros],
+          total,
+        };
+      }
+
+      // Fallback: buscar páginas restantes sequencialmente quando não há total
+      const allLivros: Livro[] = [...firstLivros];
+      let page = 2;
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await api.get(`${ENDPOINT}?page=${page}&limit=${PAGE_LIMIT}`);
         const livros = response.data.data || response.data;
-        
+
         if (Array.isArray(livros) && livros.length > 0) {
-          allLivros = [...allLivros, ...livros];
-          
-          // Se retornou menos que 100, provavelmente é a última página
-          if (livros.length < 100) {
-            hasMore = false;
-          } else {
-            page++;
-          }
+          allLivros.push(...livros);
+          hasMore = livros.length === PAGE_LIMIT;
+          page++;
         } else {
           hasMore = false;
         }
-      } catch (error) {
-        // Se der erro na paginação, tenta buscar sem parâmetros (fallback)
-        if (page === 1) {
-          const response = await api.get(ENDPOINT);
-          const livros = response.data.data || response.data;
-          const total = response.data.total;
-          return { livros: Array.isArray(livros) ? livros : [], total };
-        }
-        hasMore = false;
       }
+
+      return { livros: allLivros, total: allLivros.length };
+    } catch (error) {
+      // Se a paginação falhar, tenta buscar sem parâmetros (fallback)
+      const response = await api.get(ENDPOINT);
+      const livros = response.data.data || response.data;
+      const total = response.data.total;
+      return { livros: Array.isArray(livros) ? livros : [], total };
     }
-    
-    return { livros: allLivros, total: allLivros.length };
   },
 
   getById: async (id: string): Promise<Livro> => {
@@ -77,5 +103,36 @@ export const livroService = {
     const livros = response.data.data || response.data;
     const total = response.data.total;
     return { livros, total };
-  }
+  },
+
+  // Busca uma única página já filtrada/paginada no servidor (sem trazer a coleção inteira).
+  // Usado pela listagem de livros; os demais consumidores (dropdowns, dashboard) continuam
+  // usando getAll(), que carrega o catálogo completo.
+  getPaginado: async (params: {
+    page: number;
+    limit: number;
+    titulo?: string;
+    categoria?: string;
+    disponivel?: boolean;
+  }): Promise<{ livros: Livro[]; total: number; totalPaginas: number; page: number }> => {
+    const response = await api.get(ENDPOINT, {
+      params: {
+        page: params.page,
+        limit: params.limit,
+        titulo: params.titulo || undefined,
+        categoria: params.categoria || undefined,
+        disponivel: params.disponivel,
+      },
+    });
+    const livros = response.data.data || response.data;
+    const total = response.data.total ?? (Array.isArray(livros) ? livros.length : 0);
+    const totalPaginas = response.data.totalPaginas ?? Math.max(1, Math.ceil(total / params.limit));
+
+    return {
+      livros: Array.isArray(livros) ? livros : [],
+      total,
+      totalPaginas,
+      page: params.page,
+    };
+  },
 };

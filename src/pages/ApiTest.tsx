@@ -72,7 +72,7 @@ const ApiTest: React.FC = () => {
   const testGetCategorias = async () => {
     try {
       setApiError(null);
-      await dispatch(fetchCategorias()).unwrap();
+      await dispatch(fetchCategorias(false)).unwrap();
       setResults(categorias);
       toast.success('API de Categorias testada com sucesso!');
     } catch (error: any) {

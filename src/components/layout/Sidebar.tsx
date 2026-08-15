@@ -24,11 +24,22 @@ const SidebarContainer = styled.aside<{ $isOpen: boolean }>`
   left: 0;
   width: ${({ $isOpen }) => ($isOpen ? '250px' : '70px')};
   height: calc(100vh - 64px);
-  background-color: white;
+  background-color: var(--surface-color);
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
   transition: width 0.3s ease;
   overflow-y: auto;
   z-index: 90;
+
+  @media (max-width: 768px) {
+    width: 250px;
+    transform: translateX(${({ $isOpen }) => ($isOpen ? '0' : '-100%')});
+    transition: transform 0.3s ease;
+    box-shadow: ${({ $isOpen }) => ($isOpen ? '2px 0 8px rgba(0, 0, 0, 0.15)' : 'none')};
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 `;
 
 const NavList = styled.ul`
@@ -54,15 +65,21 @@ const StyledNavLink = styled(NavLink)<{ $isopen: string }>`
   margin: 0 10px;
   
   &:hover {
-    background-color: rgba(46, 90, 136, 0.05);
+    background-color: var(--hover-bg);
   }
-  
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
+    border-radius: 6px;
+  }
+
   &.active {
-    background-color: rgba(46, 90, 136, 0.1);
+    background-color: var(--active-bg);
     color: var(--primary-color);
     font-weight: 500;
   }
-  
+
   svg {
     min-width: 20px;
     margin-right: ${({ $isopen }) => ($isopen === 'true' ? '12px' : '0')};
@@ -80,8 +97,6 @@ const SectionTitle = styled.div<{ $isopen: string }>`
   padding: 12px 25px;
   color: var(--light-text-color);
   font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
   font-weight: 500;
   display: ${({ $isopen }) => ($isopen === 'true' ? 'block' : 'none')};
 `;
@@ -93,20 +108,25 @@ const LogoutButton = styled.button<{ $isopen: string }>`
   margin: 10px;
   padding: 12px 15px;
   border: none;
-  background-color: #f8d7da;
-  color: #dc3545;
+  background-color: var(--status-danger-bg);
+  color: var(--danger-color);
   border-radius: 6px;
   font-family: inherit;
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:hover {
-    background-color: #dc3545;
+    background-color: var(--danger-color);
     color: white;
   }
-  
+
+  &:focus-visible {
+    outline: 2px solid var(--danger-color);
+    outline-offset: 2px;
+  }
+
   svg {
     min-width: 20px;
     margin-right: ${({ $isopen }) => ($isopen === 'true' ? '12px' : '0')};
@@ -139,7 +159,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   };
   
   return (
-    <SidebarContainer $isOpen={isOpen}>
+    <SidebarContainer id="main-sidebar" $isOpen={isOpen}>
       <NavList>
        
           <NavItem>
@@ -191,14 +211,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         {isAdmin && (
           <>
             <SectionTitle $isopen={isOpen.toString()}>Administração</SectionTitle>
-            
-            {/* <NavItem>
-              <StyledNavLink to="/dashboard" $isopen={isOpen.toString()}>
-                <FiBarChart2 size={20} />
-                <span>Dashboard</span>
-              </StyledNavLink>
-            </NavItem> */}
-            
+
             <NavItem>
               <StyledNavLink to="/configuracoes" $isopen={isOpen.toString()}>
                 <FiSettings size={20} />

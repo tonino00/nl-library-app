@@ -1,20 +1,38 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { emprestimoService } from '../../services/emprestimoService';
 import { Emprestimo, EmprestimoState } from '../../types';
+import { logout } from '../auth/authSlice';
+import { loadCachedData, saveCachedData, clearCachedData } from '../../utils/persistedCache';
 
-// Estado inicial
+const CACHE_KEY = 'emprestimos';
+// TTL curto: status muda com frequência (devoluções, atrasos, e um job expira
+// reservas não confirmadas a cada 15min no backend), então mantemos a janela pequena.
+const CACHE_TTL_MS = 30_000;
+
+const cachedEmprestimos = loadCachedData<Emprestimo[]>(CACHE_KEY, CACHE_TTL_MS);
+
+// Estado inicial: reidrata de um reload recente antes de assumir estado vazio
 const initialState: EmprestimoState = {
-  emprestimos: [],
+  emprestimos: cachedEmprestimos ?? [],
   emprestimo: null,
   isLoading: false,
   error: null,
+  lastFetched: cachedEmprestimos ? new Date().toISOString() : null,
+  isDataLoaded: !!cachedEmprestimos,
 };
 
 // Async thunks
 export const fetchEmprestimos = createAsyncThunk(
   'emprestimos/fetchAll',
-  async (_, { rejectWithValue }) => {
+  async (forceRefresh: boolean = false, { getState, rejectWithValue }) => {
     try {
+      const state = getState() as { emprestimos: EmprestimoState };
+
+      // Se os dados já foram carregados e não é um refresh forçado, não faz nova requisição
+      if (state.emprestimos.isDataLoaded && !forceRefresh) {
+        return state.emprestimos.emprestimos;
+      }
+
       return await emprestimoService.getAll();
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Erro ao buscar empréstimos');
@@ -144,6 +162,19 @@ const emprestimoSlice = createSlice({
     setSelectedEmprestimo: (state, action: PayloadAction<Emprestimo | null>) => {
       state.emprestimo = action.payload;
     },
+    invalidateCache: (state) => {
+      state.isDataLoaded = false;
+      state.lastFetched = null;
+      clearCachedData(CACHE_KEY);
+    },
+    resetEmprestimosState: (state) => {
+      state.emprestimos = [];
+      state.emprestimo = null;
+      state.isDataLoaded = false;
+      state.lastFetched = null;
+      state.error = null;
+      clearCachedData(CACHE_KEY);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -155,6 +186,9 @@ const emprestimoSlice = createSlice({
       .addCase(fetchEmprestimos.fulfilled, (state, action: PayloadAction<Emprestimo[]>) => {
         state.isLoading = false;
         state.emprestimos = action.payload;
+        state.lastFetched = new Date().toISOString();
+        state.isDataLoaded = true;
+        saveCachedData<Emprestimo[]>(CACHE_KEY, state.emprestimos);
       })
       .addCase(fetchEmprestimos.rejected, (state, action) => {
         state.isLoading = false;
@@ -211,6 +245,7 @@ const emprestimoSlice = createSlice({
       .addCase(createEmprestimo.fulfilled, (state, action: PayloadAction<Emprestimo>) => {
         state.isLoading = false;
         state.emprestimos.push(action.payload);
+        saveCachedData<Emprestimo[]>(CACHE_KEY, state.emprestimos);
       })
       .addCase(createEmprestimo.rejected, (state, action) => {
         state.isLoading = false;
@@ -228,6 +263,7 @@ const emprestimoSlice = createSlice({
           emp._id === action.payload._id ? action.payload : emp
         );
         state.emprestimo = action.payload;
+        saveCachedData<Emprestimo[]>(CACHE_KEY, state.emprestimos);
       })
       .addCase(updateEmprestimo.rejected, (state, action) => {
         state.isLoading = false;
@@ -245,6 +281,7 @@ const emprestimoSlice = createSlice({
         if (state.emprestimo && state.emprestimo._id === action.payload) {
           state.emprestimo = null;
         }
+        saveCachedData<Emprestimo[]>(CACHE_KEY, state.emprestimos);
       })
       .addCase(deleteEmprestimo.rejected, (state, action) => {
         state.isLoading = false;
@@ -262,6 +299,7 @@ const emprestimoSlice = createSlice({
           emp._id === action.payload._id ? action.payload : emp
         );
         state.emprestimo = action.payload;
+        saveCachedData<Emprestimo[]>(CACHE_KEY, state.emprestimos);
       })
       .addCase(finalizarEmprestimo.rejected, (state, action) => {
         state.isLoading = false;
@@ -279,6 +317,7 @@ const emprestimoSlice = createSlice({
           emp._id === action.payload._id ? action.payload : emp
         );
         state.emprestimo = action.payload;
+        saveCachedData<Emprestimo[]>(CACHE_KEY, state.emprestimos);
       })
       .addCase(renovarEmprestimo.rejected, (state, action) => {
         state.isLoading = false;
@@ -310,10 +349,21 @@ const emprestimoSlice = createSlice({
           emp._id === action.payload._id ? action.payload : emp
         );
         state.emprestimo = action.payload;
+        saveCachedData<Emprestimo[]>(CACHE_KEY, state.emprestimos);
       })
       .addCase(pagarMultaEmprestimo.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
+      })
+
+      // Invalidar cache quando usuário fizer logout
+      .addCase(logout.fulfilled, (state) => {
+        state.emprestimos = [];
+        state.emprestimo = null;
+        state.isDataLoaded = false;
+        state.lastFetched = null;
+        state.error = null;
+        clearCachedData(CACHE_KEY);
       });
   },
 });

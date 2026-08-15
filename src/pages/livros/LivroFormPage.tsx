@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import styled from 'styled-components';
@@ -23,6 +23,8 @@ const PageHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 20px;
 `;
 
@@ -47,6 +49,7 @@ const ButtonContainer = styled.div`
   display: flex;
   gap: 10px;
   justify-content: flex-end;
+  flex-wrap: wrap;
   margin-top: 20px;
 `;
 
@@ -58,7 +61,7 @@ const ImagePreview = styled.img`
   max-width: 200px;
   max-height: 300px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--box-shadow);
 `;
 
 
@@ -82,10 +85,20 @@ const LivroFormPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   
   const capaUrl = watch('capa');
-  
+  const [capaError, setCapaError] = useState(false);
+
   useEffect(() => {
-    dispatch(fetchCategorias());
-    
+    setCapaError(false);
+  }, [capaUrl]);
+
+  const handleCapaError = () => {
+    setCapaError(true);
+    toast.error('Erro ao carregar a imagem. Verifique o URL fornecido.');
+  };
+
+  useEffect(() => {
+    dispatch(fetchCategorias(false));
+
     if (isEditMode && id) {
       dispatch(fetchLivroById(id));
     }
@@ -156,9 +169,10 @@ const LivroFormPage: React.FC = () => {
           {isEditMode ? 'Editar Livro' : 'Novo Livro'}
         </PageTitle>
         <Button
+          as={Link}
+          to="/livros"
           variant="outline"
           leftIcon={<FiArrowLeft />}
-          onClick={() => navigate('/livros')}
         >
           Voltar
         </Button>
@@ -281,16 +295,16 @@ const LivroFormPage: React.FC = () => {
             fullWidth
           />
           
-          {capaUrl && (
+          {capaUrl && !capaError && (
             <ImagePreviewContainer>
               <h4>Pré-visualização da capa:</h4>
               <ImagePreview 
                 src={capaUrl}
                 alt="Pré-visualização da capa"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                  toast.error('Erro ao carregar a imagem. Verifique o URL fornecido.');
-                }}
+                onError={handleCapaError}
+                loading="lazy"
+                width="200"
+                height="300"
               />
             </ImagePreviewContainer>
           )}
@@ -302,14 +316,13 @@ const LivroFormPage: React.FC = () => {
             placeholder="Descrição do livro"
             fullWidth
             as="textarea"
-            style={{ minHeight: '120px' }}
           />
           
           <ButtonContainer>
             <Button
-              type="button"
+              as={Link}
+              to="/livros"
               variant="outline"
-              onClick={() => navigate('/livros')}
             >
               Cancelar
             </Button>

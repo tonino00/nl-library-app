@@ -2,17 +2,92 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { livroService } from '../../services/livroService';
 import { Livro, LivroState } from '../../types';
 import { logout } from '../auth/authSlice';
+import { loadCachedData, saveCachedData, clearCachedData, clearCachedDataByPrefix } from '../../utils/persistedCache';
 
-// Estado inicial
+const CACHE_KEY = 'livros';
+// Alinhado ao TTL do cache Redis de GET /api/livros no backend (até 60s)
+const CACHE_TTL_MS = 60_000;
+
+// Cache da listagem paginada: uma entrada por combinação de página+filtros,
+// já que cada combinação é uma "visão" diferente dos dados (não dá pra usar
+// uma única flag isDataLoaded como no restante do slice).
+const PAGINADO_CACHE_PREFIX = 'livros-paginado:';
+const PAGINADO_CACHE_TTL_MS = 60_000;
+
+interface CachedLivros {
+  livros: Livro[];
+  total: number;
+}
+
+// Estado inicial: tenta reidratar de um reload recente antes de aceitar o estado vazio,
+// evitando bater na API de novo se os dados ainda estariam quentes no servidor.
+const cached = loadCachedData<CachedLivros>(CACHE_KEY, CACHE_TTL_MS);
+
 const initialState: LivroState = {
-  livros: [],
+  livros: cached?.livros ?? [],
   livro: null,
-  total: 0,
+  total: cached?.total ?? 0,
   isLoading: false,
   error: null,
-  lastFetched: null,
-  isDataLoaded: false,
+  lastFetched: cached ? new Date().toISOString() : null,
+  isDataLoaded: !!cached,
+  paginado: {
+    livros: [],
+    total: 0,
+    totalPaginas: 1,
+    page: 1,
+    isLoading: false,
+    pendingKey: null as string | null,
+  },
 };
+
+export interface LivrosPaginadosParams {
+  page: number;
+  limit: number;
+  titulo?: string;
+  categoria?: string;
+  disponivel?: boolean;
+}
+
+const buildLivrosPaginadosKey = (params: LivrosPaginadosParams) => JSON.stringify(params);
+
+interface LivrosPaginadosResult {
+  livros: Livro[];
+  total: number;
+  totalPaginas: number;
+  page: number;
+}
+
+export const fetchLivrosPaginados = createAsyncThunk(
+  'livros/fetchPaginados',
+  async (params: LivrosPaginadosParams, { rejectWithValue }) => {
+    const cacheKey = PAGINADO_CACHE_PREFIX + buildLivrosPaginadosKey(params);
+    const cached = loadCachedData<LivrosPaginadosResult>(cacheKey, PAGINADO_CACHE_TTL_MS);
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const result = await livroService.getPaginado(params);
+      saveCachedData<LivrosPaginadosResult>(cacheKey, result);
+      return result;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Erro ao buscar livros');
+    }
+  },
+  {
+    // Evita disparar a mesma requisição duas vezes em sequência (ex.: o duplo
+    // mount do React.StrictMode em dev, ou dois filtros idênticos em rajada).
+    condition: (params, { getState }) => {
+      const state = getState() as { livros: LivroState };
+      const key = buildLivrosPaginadosKey(params);
+      if (state.livros.paginado.pendingKey === key) {
+        return false;
+      }
+      return true;
+    },
+  }
+);
 
 // Async thunks
 export const fetchLivros = createAsyncThunk(
@@ -115,6 +190,8 @@ const livroSlice = createSlice({
     invalidateCache: (state) => {
       state.isDataLoaded = false;
       state.lastFetched = null;
+      clearCachedData(CACHE_KEY);
+      clearCachedDataByPrefix(PAGINADO_CACHE_PREFIX);
     },
     resetLivrosState: (state) => {
       state.livros = [];
@@ -122,6 +199,8 @@ const livroSlice = createSlice({
       state.isDataLoaded = false;
       state.lastFetched = null;
       state.error = null;
+      clearCachedData(CACHE_KEY);
+      clearCachedDataByPrefix(PAGINADO_CACHE_PREFIX);
     },
   },
   extraReducers: (builder) => {
@@ -138,6 +217,7 @@ const livroSlice = createSlice({
           state.total = action.payload.total || action.payload.livros.length;
           state.lastFetched = new Date().toISOString();
           state.isDataLoaded = true;
+          saveCachedData<CachedLivros>(CACHE_KEY, { livros: state.livros, total: state.total ?? state.livros.length });
         }
       })
       .addCase(fetchLivros.rejected, (state, action) => {
@@ -168,6 +248,8 @@ const livroSlice = createSlice({
         state.isLoading = false;
         state.livros.push(action.payload);
         state.total = state.livros.length;
+        saveCachedData<CachedLivros>(CACHE_KEY, { livros: state.livros, total: state.total ?? state.livros.length });
+        clearCachedDataByPrefix(PAGINADO_CACHE_PREFIX);
       })
       .addCase(createLivro.rejected, (state, action) => {
         state.isLoading = false;
@@ -185,6 +267,8 @@ const livroSlice = createSlice({
           livro._id === action.payload._id ? action.payload : livro
         );
         state.livro = action.payload;
+        saveCachedData<CachedLivros>(CACHE_KEY, { livros: state.livros, total: state.total ?? state.livros.length });
+        clearCachedDataByPrefix(PAGINADO_CACHE_PREFIX);
       })
       .addCase(updateLivro.rejected, (state, action) => {
         state.isLoading = false;
@@ -203,6 +287,8 @@ const livroSlice = createSlice({
         if (state.livro && state.livro._id === action.payload) {
           state.livro = null;
         }
+        saveCachedData<CachedLivros>(CACHE_KEY, { livros: state.livros, total: state.total ?? state.livros.length });
+        clearCachedDataByPrefix(PAGINADO_CACHE_PREFIX);
       })
       .addCase(deleteLivro.rejected, (state, action) => {
         state.isLoading = false;
@@ -238,7 +324,32 @@ const livroSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-      
+
+      // Fetch paginado (server-side, usado pela listagem de livros)
+      .addCase(fetchLivrosPaginados.pending, (state, action) => {
+        state.paginado.isLoading = true;
+        state.paginado.pendingKey = buildLivrosPaginadosKey(action.meta.arg);
+        state.error = null;
+      })
+      .addCase(fetchLivrosPaginados.fulfilled, (state, action) => {
+        state.paginado.isLoading = false;
+        state.paginado.livros = action.payload.livros;
+        state.paginado.total = action.payload.total;
+        state.paginado.totalPaginas = action.payload.totalPaginas;
+        state.paginado.page = action.payload.page;
+        // Só limpa se ninguém disparou uma requisição mais nova enquanto esta estava em voo
+        if (state.paginado.pendingKey === buildLivrosPaginadosKey(action.meta.arg)) {
+          state.paginado.pendingKey = null;
+        }
+      })
+      .addCase(fetchLivrosPaginados.rejected, (state, action) => {
+        state.paginado.isLoading = false;
+        state.error = action.payload as string;
+        if (state.paginado.pendingKey === buildLivrosPaginadosKey(action.meta.arg)) {
+          state.paginado.pendingKey = null;
+        }
+      })
+
       // Invalidar cache quando usuário fizer logout
       .addCase(logout.fulfilled, (state) => {
         state.livros = [];
@@ -246,6 +357,9 @@ const livroSlice = createSlice({
         state.isDataLoaded = false;
         state.lastFetched = null;
         state.error = null;
+        state.paginado = { livros: [], total: 0, totalPaginas: 1, page: 1, isLoading: false, pendingKey: null as string | null };
+        clearCachedData(CACHE_KEY);
+        clearCachedDataByPrefix(PAGINADO_CACHE_PREFIX);
       });
   },
 });

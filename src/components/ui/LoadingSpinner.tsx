@@ -7,9 +7,14 @@ interface LoadingSpinnerProps {
   message?: string;
 }
 
+const SIZES: Record<NonNullable<LoadingSpinnerProps['size']>, { ring: number; border: number; logo: number }> = {
+  small: { ring: 36, border: 4, logo: 26 },
+  medium: { ring: 64, border: 5, logo: 48 },
+  large: { ring: 96, border: 6, logo: 72 },
+};
+
 const spin = keyframes`
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  to { transform: rotate(360deg); }
 `;
 
 const fadeIn = keyframes`
@@ -17,10 +22,9 @@ const fadeIn = keyframes`
   to { opacity: 1; }
 `;
 
-const pulse = keyframes`
-  0% { transform: scale(0.95); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(0.95); }
+const softPulse = keyframes`
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
 `;
 
 const Container = styled.div`
@@ -28,60 +32,57 @@ const Container = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
-  animation: ${fadeIn} 0.5s ease-in-out;
-`;
+  gap: 16px;
+  animation: ${fadeIn} 0.3s ease-out;
 
-const SpinnerContainer = styled.div`
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const SpinnerRing = styled.div<{ size: string }>`
-  display: inline-block;
-  width: ${({ size }) => 
-    size === 'small' ? '30px' : 
-    size === 'large' ? '80px' : '50px'};
-  height: ${({ size }) => 
-    size === 'small' ? '30px' : 
-    size === 'large' ? '80px' : '50px'};
-  
-  &:after {
-    content: "";
-    display: block;
-    width: ${({ size }) => 
-      size === 'small' ? '24px' : 
-      size === 'large' ? '64px' : '40px'};
-    height: ${({ size }) => 
-      size === 'small' ? '24px' : 
-      size === 'large' ? '64px' : '40px'};
-    margin: 8px;
-    border-radius: 50%;
-    border: 3px solid var(--primary-color);
-    border-color: var(--primary-color) transparent var(--primary-color) transparent;
-    animation: ${spin} 1.2s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 `;
 
-const Logo = styled.img<{ size: string }>`
+const SpinnerContainer = styled.div<{ $size: number }>`
+  position: relative;
+  width: ${({ $size }) => $size}px;
+  height: ${({ $size }) => $size}px;
+`;
+
+// Trilha estática de fundo + um arco colorido girando por cima: o padrão
+// consolidado de spinner de produto, mais legível que dois arcos cruzados.
+const Track = styled.div<{ $size: number; $border: number }>`
   position: absolute;
-  width: ${({ size }) => 
-    size === 'small' ? '16px' : 
-    size === 'large' ? '40px' : '25px'};
-  height: ${({ size }) => 
-    size === 'small' ? '16px' : 
-    size === 'large' ? '40px' : '25px'};
+  inset: 0;
+  border-radius: 50%;
+  border: ${({ $border }) => $border}px solid var(--border-color);
+`;
+
+const Arc = styled.div<{ $border: number }>`
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: ${({ $border }) => $border}px solid transparent;
+  border-top-color: var(--primary-color);
+  animation: ${spin} 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: ${softPulse} 1.6s ease-in-out infinite;
+    border-top-color: transparent;
+    border-color: var(--primary-color);
+  }
+`;
+
+const Logo = styled.img<{ $size: number }>`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: ${({ $size }) => $size}px;
+  height: ${({ $size }) => $size}px;
   object-fit: contain;
-  animation: ${pulse} 2s ease-in-out infinite;
 `;
 
 const Message = styled.p`
-  margin-top: 16px;
   color: var(--text-color);
-  font-size: 16px;
+  font-size: 0.95rem;
   font-weight: 500;
   text-align: center;
 `;
@@ -89,19 +90,16 @@ const Message = styled.p`
 const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   size = 'medium',
   showLogo = true,
-  message = 'Carregando...'
+  message = 'Carregando...',
 }) => {
+  const { ring, border, logo } = SIZES[size];
+
   return (
-    <Container>
-      <SpinnerContainer>
-        <SpinnerRing size={size} />
-        {showLogo && (
-          <Logo 
-            src="/nlicon.png" 
-            alt="Logo da aplicação" 
-            size={size}
-          />
-        )}
+    <Container role="status" aria-live="polite" aria-atomic="true">
+      <SpinnerContainer $size={ring}>
+        <Track $size={ring} $border={border} />
+        <Arc $border={border} />
+        {showLogo && <Logo src="/nlicon.png" alt="" $size={logo} />}
       </SpinnerContainer>
       {message && <Message>{message}</Message>}
     </Container>

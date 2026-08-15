@@ -3,7 +3,7 @@ import styled from 'styled-components';
 
 type InputElement = HTMLInputElement | HTMLTextAreaElement;
 
-interface InputProps extends Omit<React.InputHTMLAttributes<InputElement>, 'as'> {
+export interface InputProps extends Omit<React.InputHTMLAttributes<InputElement>, 'as'> {
   label?: string;
   helperText?: string;
   error?: string;
@@ -42,28 +42,32 @@ const StyledInput = styled.input<{ $hasError?: boolean; $hasLeftIcon?: boolean; 
   font-family: inherit;
   
   &:focus {
-    outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(46, 90, 136, 0.2);
   }
-  
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
   &:disabled {
-    background-color: #f5f5f5;
+    background-color: var(--disabled-bg);
     cursor: not-allowed;
   }
-  
+
   ${({ $hasError }) => $hasError && `
     border-color: var(--danger-color);
-    
-    &:focus {
-      box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
+
+    &:focus-visible {
+      outline: 2px solid var(--danger-color);
+      outline-offset: 2px;
     }
   `}
-  
+
   ${({ $hasLeftIcon }) => $hasLeftIcon && `
     padding-left: 40px;
   `}
-  
+
   ${({ $hasRightIcon }) => $hasRightIcon && `
     padding-right: 40px;
   `}
@@ -79,32 +83,36 @@ const StyledTextarea = styled.textarea<{ $hasError?: boolean; $hasLeftIcon?: boo
   font-family: inherit;
   
   &:focus {
-    outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(46, 90, 136, 0.2);
   }
-  
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
   &:disabled {
-    background-color: #f5f5f5;
+    background-color: var(--disabled-bg);
     cursor: not-allowed;
   }
-  
+
   ${({ $hasError }) => $hasError && `
     border-color: var(--danger-color);
-    
-    &:focus {
-      box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
+
+    &:focus-visible {
+      outline: 2px solid var(--danger-color);
+      outline-offset: 2px;
     }
   `}
-  
+
   ${({ $hasLeftIcon }) => $hasLeftIcon && `
     padding-left: 40px;
   `}
-  
+
   ${({ $hasRightIcon }) => $hasRightIcon && `
     padding-right: 40px;
   `}
-  
+
   resize: vertical;
   min-height: 100px;
 `;

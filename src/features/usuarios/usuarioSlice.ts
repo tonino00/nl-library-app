@@ -1,20 +1,38 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { usuarioService } from '../../services/usuarioService';
 import { Usuario, UsuarioState } from '../../types';
+import { logout } from '../auth/authSlice';
+import { loadCachedData, saveCachedData, clearCachedData } from '../../utils/persistedCache';
 
-// Estado inicial
+const CACHE_KEY = 'usuarios';
+// Sem cache Redis dedicado no backend para esta rota; TTL curto no cliente
+// evita apenas o refetch redundante de um reload feito segundos após o anterior.
+const CACHE_TTL_MS = 60_000;
+
+const cachedUsuarios = loadCachedData<Usuario[]>(CACHE_KEY, CACHE_TTL_MS);
+
+// Estado inicial: reidrata de um reload recente antes de assumir estado vazio
 const initialState: UsuarioState = {
-  usuarios: [],
+  usuarios: cachedUsuarios ?? [],
   usuario: null,
   isLoading: false,
   error: null,
+  lastFetched: cachedUsuarios ? new Date().toISOString() : null,
+  isDataLoaded: !!cachedUsuarios,
 };
 
 // Async thunks
 export const fetchUsuarios = createAsyncThunk(
   'usuarios/fetchAll',
-  async (_, { rejectWithValue }) => {
+  async (forceRefresh: boolean = false, { getState, rejectWithValue }) => {
     try {
+      const state = getState() as { usuarios: UsuarioState };
+
+      // Se os dados já foram carregados e não é um refresh forçado, não faz nova requisição
+      if (state.usuarios.isDataLoaded && !forceRefresh) {
+        return state.usuarios.usuarios;
+      }
+
       return await usuarioService.getAll();
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Erro ao buscar usuários');
@@ -92,6 +110,19 @@ const usuarioSlice = createSlice({
     setSelectedUsuario: (state, action: PayloadAction<Usuario | null>) => {
       state.usuario = action.payload;
     },
+    invalidateCache: (state) => {
+      state.isDataLoaded = false;
+      state.lastFetched = null;
+      clearCachedData(CACHE_KEY);
+    },
+    resetUsuariosState: (state) => {
+      state.usuarios = [];
+      state.usuario = null;
+      state.isDataLoaded = false;
+      state.lastFetched = null;
+      state.error = null;
+      clearCachedData(CACHE_KEY);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -103,6 +134,9 @@ const usuarioSlice = createSlice({
       .addCase(fetchUsuarios.fulfilled, (state, action: PayloadAction<Usuario[]>) => {
         state.isLoading = false;
         state.usuarios = action.payload;
+        state.lastFetched = new Date().toISOString();
+        state.isDataLoaded = true;
+        saveCachedData<Usuario[]>(CACHE_KEY, state.usuarios);
       })
       .addCase(fetchUsuarios.rejected, (state, action) => {
         state.isLoading = false;
@@ -131,6 +165,7 @@ const usuarioSlice = createSlice({
       .addCase(createUsuario.fulfilled, (state, action: PayloadAction<Usuario>) => {
         state.isLoading = false;
         state.usuarios.push(action.payload);
+        saveCachedData<Usuario[]>(CACHE_KEY, state.usuarios);
       })
       .addCase(createUsuario.rejected, (state, action) => {
         state.isLoading = false;
@@ -148,6 +183,7 @@ const usuarioSlice = createSlice({
           usuario._id === action.payload._id ? action.payload : usuario
         );
         state.usuario = action.payload;
+        saveCachedData<Usuario[]>(CACHE_KEY, state.usuarios);
       })
       .addCase(updateUsuario.rejected, (state, action) => {
         state.isLoading = false;
@@ -165,6 +201,7 @@ const usuarioSlice = createSlice({
         if (state.usuario && state.usuario._id === action.payload) {
           state.usuario = null;
         }
+        saveCachedData<Usuario[]>(CACHE_KEY, state.usuarios);
       })
       .addCase(deleteUsuario.rejected, (state, action) => {
         state.isLoading = false;
@@ -184,10 +221,21 @@ const usuarioSlice = createSlice({
         if (state.usuario && state.usuario._id === action.payload._id) {
           state.usuario = action.payload;
         }
+        saveCachedData<Usuario[]>(CACHE_KEY, state.usuarios);
       })
       .addCase(toggleAtivoUsuario.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
+      })
+
+      // Invalidar cache quando usuário fizer logout
+      .addCase(logout.fulfilled, (state) => {
+        state.usuarios = [];
+        state.usuario = null;
+        state.isDataLoaded = false;
+        state.lastFetched = null;
+        state.error = null;
+        clearCachedData(CACHE_KEY);
       });
   },
 });

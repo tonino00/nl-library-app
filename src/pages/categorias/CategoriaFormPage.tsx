@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import styled from 'styled-components';
@@ -21,6 +21,8 @@ const PageHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 20px;
 `;
 
@@ -39,6 +41,7 @@ const ButtonContainer = styled.div`
   display: flex;
   gap: 10px;
   justify-content: flex-end;
+  flex-wrap: wrap;
   margin-top: 20px;
 `;
 
@@ -103,7 +106,8 @@ const CategoriaFormPage: React.FC = () => {
         <Button
           variant="outline"
           leftIcon={<FiArrowLeft />}
-          onClick={() => navigate('/categorias')}
+          as={Link}
+          to="/categorias"
         >
           Voltar
         </Button>
@@ -135,14 +139,13 @@ const CategoriaFormPage: React.FC = () => {
               placeholder="Descrição da categoria (opcional)"
               fullWidth
               as="textarea"
-              style={{ minHeight: '120px' }}
             />
             
             <ButtonContainer>
               <Button
-                type="button"
                 variant="outline"
-                onClick={() => navigate('/categorias')}
+                as={Link}
+                to="/categorias"
               >
                 Cancelar
               </Button>
