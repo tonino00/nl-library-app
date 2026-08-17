@@ -204,10 +204,6 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
         <span>Biblioteca NL</span>
       </Logo>
 
-      <SearchWrapper>
-        <SearchBar onSearch={handleSearch} placeholder="Buscar no acervo..." />
-      </SearchWrapper>
-
       {user && (
         <DropdownMenu
           triggerLabel={`Menu de ${user.nome || "usuário"}`}
