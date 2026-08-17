@@ -5,7 +5,6 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "../../store";
 import { FiMenu, FiX, FiUser, FiSettings, FiLogOut, FiChevronDown } from "../../utils/iconFix";
 import { logout } from "../../features/auth/authSlice";
-import SearchBar from "../ui/SearchBar";
 import DropdownMenu, { DropdownMenuItem } from "../ui/DropdownMenu";
 
 interface HeaderProps {
@@ -38,16 +37,6 @@ const Logo = styled(Link)`
 
   span {
     margin-left: 10px;
-  }
-`;
-
-const SearchWrapper = styled.div`
-  flex: 1;
-  max-width: 420px;
-  margin: 0 24px;
-
-  @media (max-width: 768px) {
-    display: none;
   }
 `;
 
@@ -164,11 +153,6 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
-  const handleSearch = (term: string) => {
-    if (term.trim()) {
-      navigate("/livros", { state: { initialSearch: term.trim() } });
-    }
-  };
 
   const handleLogout = () => {
     dispatch(logout());
@@ -203,10 +187,6 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
       <Logo to="/">
         <span>Biblioteca NL</span>
       </Logo>
-
-      <SearchWrapper>
-        <SearchBar onSearch={handleSearch} placeholder="Buscar no acervo..." />
-      </SearchWrapper>
 
       {user && (
         <DropdownMenu
