@@ -222,7 +222,9 @@ const LivroDetailPage: React.FC = () => {
     {
       header: "Usuário",
       render: (item) =>
-        typeof item.usuario === "string" ? "Carregando..." : item.usuario.nome,
+        typeof item.usuario === "string"
+          ? "Carregando..."
+          : item.usuario?.nome || "Usuário removido",
     },
     {
       header: "Data Empréstimo",

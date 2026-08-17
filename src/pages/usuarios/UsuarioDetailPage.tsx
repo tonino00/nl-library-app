@@ -168,7 +168,8 @@ const UsuarioDetailPage: React.FC = () => {
   const columns: Column<Emprestimo>[] = [
     {
       header: 'Livro',
-      render: (item) => typeof item.livro === 'string' ? 'Carregando...' : item.livro.titulo,
+      render: (item) =>
+        typeof item.livro === 'string' ? 'Carregando...' : item.livro?.titulo || 'Livro removido',
     },
     {
       header: 'Data Empréstimo',
