@@ -8,6 +8,7 @@ import { AppDispatch } from '../store';
 import { Usuario } from '../types';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import PasswordInput from '../components/ui/PasswordInput';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { toast } from 'react-toastify';
 
@@ -282,9 +283,8 @@ const RegisterPage: React.FC = () => {
             </FormRow>
             
             <FormRow>
-              <Input
+              <PasswordInput
                 label="Senha"
-                type="password"
                 name="senha"
                 value={formData.senha}
                 onChange={handleChange}
@@ -292,10 +292,9 @@ const RegisterPage: React.FC = () => {
                 fullWidth
                 leftIcon={<FiLock />}
               />
-              
-              <Input
+
+              <PasswordInput
                 label="Confirmar Senha"
-                type="password"
                 name="confirmarSenha"
                 value={formData.confirmarSenha}
                 onChange={handleChange}

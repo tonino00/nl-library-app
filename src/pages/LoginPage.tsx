@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { FiUser, FiLock, FiBookOpen } from 'react-icons/fi';
+import { FiUser, FiLock } from 'react-icons/fi';
+import nlLogo from '../assets/img/nl.png';
 import { login } from '../features/auth/authSlice';
 import { RootState } from '../store';
 import { AppDispatch } from '../store';
@@ -107,9 +108,9 @@ const Copyright = styled.div`
   line-height: 1.5;
 `;
 
-const Icon = styled.div`
-  font-size: 3rem;
-  color: var(--primary-color);
+const Icon = styled.img`
+  height: 64px;
+  width: auto;
   margin-bottom: 1rem;
 `;
 
@@ -145,9 +146,7 @@ const LoginPage: React.FC = () => {
       <LoginContainer>
       <LoginCard padding="2rem">
         <Logo>
-              <Icon>
-                <FiBookOpen />
-              </Icon>
+              <Icon src={nlLogo} alt="Biblioteca NL" />
             <p>Sistema de Gerenciamento de Biblioteca</p>
         </Logo>
 
