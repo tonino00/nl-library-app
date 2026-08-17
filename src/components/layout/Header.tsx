@@ -5,7 +5,6 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "../../store";
 import { FiMenu, FiX, FiUser, FiSettings, FiLogOut, FiChevronDown } from "../../utils/iconFix";
 import { logout } from "../../features/auth/authSlice";
-import SearchBar from "../ui/SearchBar";
 import DropdownMenu, { DropdownMenuItem } from "../ui/DropdownMenu";
 
 interface HeaderProps {
