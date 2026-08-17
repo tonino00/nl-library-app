@@ -40,16 +40,6 @@ const Logo = styled(Link)`
   }
 `;
 
-const SearchWrapper = styled.div`
-  flex: 1;
-  max-width: 420px;
-  margin: 0 24px;
-
-  @media (max-width: 768px) {
-    display: none;
-  }
-`;
-
 const IconButton = styled.button`
   background: none;
   border: none;
@@ -163,11 +153,6 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
-  const handleSearch = (term: string) => {
-    if (term.trim()) {
-      navigate("/livros", { state: { initialSearch: term.trim() } });
-    }
-  };
 
   const handleLogout = () => {
     dispatch(logout());
