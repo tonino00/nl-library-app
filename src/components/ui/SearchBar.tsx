@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { FiSearch, FiX } from '../../../src/utils/iconFix';
 
@@ -7,6 +7,9 @@ interface SearchBarProps {
   placeholder?: string;
   initialValue?: string;
   className?: string;
+  // Atraso antes de disparar a busca automaticamente enquanto o usuário digita.
+  // Enter continua disparando na hora, sem esperar o debounce.
+  debounceMs?: number;
 }
 
 const SearchContainer = styled.div`
@@ -22,7 +25,7 @@ const SearchInput = styled.input`
   border: 1px solid var(--border-color);
   font-size: 1rem;
   transition: var(--transition);
-  
+
   &:focus {
     border-color: var(--primary-color);
   }
@@ -30,6 +33,13 @@ const SearchInput = styled.input`
   &:focus-visible {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
+  }
+
+  /* Remove o "x" nativo de limpar do input type="search" — já temos o nosso */
+  &::-webkit-search-cancel-button,
+  &::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
   }
 `;
 
@@ -51,7 +61,7 @@ const ClearButton = styled.button`
   display: flex;
   align-items: center;
   color: var(--light-text-color);
-  
+
   &:hover {
     color: var(--text-color);
   }
@@ -62,12 +72,30 @@ const SearchBar: React.FC<SearchBarProps> = ({
   placeholder = 'Pesquisar...',
   initialValue = '',
   className,
+  debounceMs = 350,
 }) => {
   const [searchTerm, setSearchTerm] = useState(initialValue);
+  const onSearchRef = useRef(onSearch);
+  onSearchRef.current = onSearch;
+  const isFirstRender = useRef(true);
+
+  // Busca automaticamente enquanto o usuário digita, sem precisar apertar
+  // Enter — só espera um pouco pra não disparar a cada letra.
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    const handle = setTimeout(() => {
+      onSearchRef.current(searchTerm);
+    }, debounceMs);
+
+    return () => clearTimeout(handle);
+  }, [searchTerm, debounceMs]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchTerm(value);
+    setSearchTerm(e.target.value);
   };
 
   const handleClear = () => {
@@ -87,7 +115,11 @@ const SearchBar: React.FC<SearchBarProps> = ({
         <FiSearch size={18} />
       </IconWrapper>
       <SearchInput
-        type="text"
+        type="search"
+        enterKeyHint="search"
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
         placeholder={placeholder}
         value={searchTerm}
         onChange={handleInputChange}
