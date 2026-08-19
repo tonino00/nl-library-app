@@ -36,9 +36,16 @@ interface TableProps<T> {
 
 const TableWrapper = styled.div`
   width: 100%;
+  max-width: 100%;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
   margin-bottom: 1rem;
+
+  /* Abaixo de 641px a tabela vira cards (ver media query mais abaixo); nunca
+     deve estourar a largura do container, mesmo que algum conteúdo tente. */
+  @media (max-width: 640px) {
+    overflow-x: hidden;
+  }
 
   /* Acima de 640px a tabela rola horizontalmente como uma tabela normal. */
   @media (min-width: 641px) {
@@ -103,6 +110,7 @@ const StyledTable = styled.table<{ $compact?: boolean; $striped?: boolean; $hove
       border: 0;
     }
 
+    table,
     tbody,
     tr,
     td {
@@ -130,6 +138,16 @@ const StyledTable = styled.table<{ $compact?: boolean; $striped?: boolean; $hove
       min-height: 44px;
       border-bottom: 1px solid var(--border-color);
       text-align: right;
+      box-sizing: border-box;
+      /* Sem isso, um e-mail ou texto longo sem espaços empurra a célula (e a
+         tabela inteira) pra fora da tela — vale tanto pro texto direto na
+         célula quanto pra qualquer filho abaixo. */
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+
+    td > * {
+      min-width: 0;
     }
 
     td:last-child {

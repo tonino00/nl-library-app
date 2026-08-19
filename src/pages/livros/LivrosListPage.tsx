@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { FiPlus, FiEdit2, FiTrash2, FiEye } from "react-icons/fi";
 import {
@@ -109,12 +109,10 @@ const ITEMS_PER_PAGE = 6;
 const LivrosListPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const location = useLocation();
   const { paginado, isLoading } = useSelector((state: RootState) => state.livros);
   const { categorias } = useSelector((state: RootState) => state.categorias);
   const { user } = useSelector((state: RootState) => state.auth);
-  const initialSearch = (location.state as { initialSearch?: string } | null)?.initialSearch;
-  const [searchTerm, setSearchTerm] = useState(initialSearch || "");
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategoria, setSelectedCategoria] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);

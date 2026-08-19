@@ -16,6 +16,7 @@ import Card from "../../components/ui/Card";
 import Table, { Column } from "../../components/ui/Table";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { Emprestimo } from "../../types";
+import { getStatusColorVars, getStatusLabel } from "../../utils/statusEmprestimo";
 
 const PageHeader = styled.div`
   display: flex;
@@ -64,12 +65,20 @@ const DefaultCover = styled.div`
   max-width: 250px;
   aspect-ratio: 2/3;
   background-color: var(--disabled-bg);
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   box-shadow: var(--box-shadow);
-  font-size: 4rem;
+  font-size: 5rem;
+  color: var(--light-text-color);
+`;
+
+const DefaultCoverLabel = styled.span`
+  font-size: 0.875rem;
   color: var(--light-text-color);
 `;
 
@@ -154,17 +163,19 @@ const LocationValue = styled.div`
 `;
 
 const EmprestimoStatus = styled.span<{ $status: string }>`
-  text-transform: capitalize;
-  color: ${({ $status }) => {
-    switch ($status) {
-      case 'atrasado':
-        return 'var(--danger-color)';
-      case 'devolvido':
-        return 'var(--success-color)';
-      default:
-        return 'var(--primary-color)';
-    }
-  }};
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+
+  ${({ $status }) => {
+    const { bg, text } = getStatusColorVars($status);
+    return `
+      background-color: ${bg};
+      color: ${text};
+    `;
+  }}
 `;
 
 const SectionTitle = styled.h2`
@@ -238,7 +249,7 @@ const LivroDetailPage: React.FC = () => {
       header: "Status",
       render: (item) => (
         <EmprestimoStatus $status={item.status || 'pendente'}>
-          {item.status || "pendente"}
+          {getStatusLabel(item.status)}
         </EmprestimoStatus>
       ),
     },
@@ -292,7 +303,10 @@ const LivroDetailPage: React.FC = () => {
             {livro.capa ? (
               <BookCover src={livro.capa} alt={livro.titulo} loading="lazy" width="250" height="375" />
             ) : (
-              <DefaultCover aria-hidden="true">📕</DefaultCover>
+              <DefaultCover>
+                <span aria-hidden="true">📕</span>
+                <DefaultCoverLabel>Sem capa</DefaultCoverLabel>
+              </DefaultCover>
             )}
           </div>
 
@@ -318,7 +332,7 @@ const LivroDetailPage: React.FC = () => {
                 <InfoItem>
                   <FiCalendar />
                   <InfoLabel>Ano:</InfoLabel>
-                  {livro.anoPublicacao}
+                  {livro.anoPublicacao || "-"}
                 </InfoItem>
 
                 <InfoItem>
@@ -329,7 +343,7 @@ const LivroDetailPage: React.FC = () => {
 
                 <InfoItem>
                   <InfoLabel>Editora:</InfoLabel>
-                  {livro.editora}
+                  {livro.editora || "-"}
                 </InfoItem>
               </div>
               

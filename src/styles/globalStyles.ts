@@ -65,6 +65,15 @@ export const GlobalStyles = createGlobalStyle`
     box-sizing: border-box;
   }
 
+  html, body {
+    /* Rede de segurança: nenhum conteúdo deve forçar scroll horizontal da
+     * página inteira (isso arrasta até elementos position:fixed, como o
+     * header, para fora da tela em mobile).
+     */
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
   body {
     font-family: var(--font-family);
     background-color: var(--background-color);
