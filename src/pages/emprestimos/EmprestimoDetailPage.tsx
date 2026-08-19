@@ -46,7 +46,11 @@ const EmprestimoDetailsContainer = styled.div`
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 30px;
-  
+
+  & > * {
+    min-width: 0;
+  }
+
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
   }
@@ -75,10 +79,14 @@ const InfoItem = styled.div`
   margin-bottom: 12px;
   flex-wrap: wrap;
   gap: 8px;
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
 
   svg {
     margin-right: 10px;
     color: var(--primary-color);
+    flex-shrink: 0;
   }
 `;
 

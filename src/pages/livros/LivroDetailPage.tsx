@@ -48,6 +48,12 @@ const BookDetailsContainer = styled.div`
   grid-template-columns: minmax(200px, 250px) 1fr;
   gap: 30px;
 
+  /* Item de grid não encolhe abaixo do conteúdo por padrão — sem isso, um
+     valor longo dentro empurra a página inteira pro lado no mobile. */
+  & > * {
+    min-width: 0;
+  }
+
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
   }
@@ -103,11 +109,19 @@ const Author = styled.h3`
 const InfoItem = styled.div`
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  row-gap: 4px;
   margin-bottom: 12px;
+  /* Sem isso, um valor longo não quebra linha e empurra a página inteira
+     pro lado no mobile. */
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
 
   svg {
     margin-right: 10px;
     color: var(--primary-color);
+    flex-shrink: 0;
   }
 `;
 
@@ -138,6 +152,10 @@ const InfoGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
+
+  & > * {
+    min-width: 0;
+  }
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
