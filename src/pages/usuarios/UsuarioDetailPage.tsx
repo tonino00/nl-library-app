@@ -42,16 +42,23 @@ const UserDetailsContainer = styled.div`
   display: grid;
   grid-template-columns: minmax(200px, 250px) 1fr;
   gap: 30px;
-  
+
+  /* Item de grid não encolhe abaixo do conteúdo por padrão — sem isso, um
+     valor longo dentro empurra a página inteira pro lado no mobile. */
+  & > * {
+    min-width: 0;
+  }
+
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
   }
 `;
 
 const Avatar = styled.div<{ $url?: string }>`
-  width: 100%;
-  max-width: 250px;
-  height: 250px;
+  width: 160px;
+  max-width: 100%;
+  height: 160px;
+  margin: 0 auto;
   border-radius: 50%;
   background-color: ${({ $url }) => ($url ? 'transparent' : 'var(--primary-color)')};
   background-image: ${({ $url }) => ($url ? `url(${$url})` : 'none')};
@@ -62,7 +69,7 @@ const Avatar = styled.div<{ $url?: string }>`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 5rem;
+  font-size: 3rem;
   font-weight: 600;
 `;
 
@@ -88,11 +95,19 @@ const UserType = styled.h3<{ $isAdmin?: boolean }>`
 const InfoItem = styled.div`
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  row-gap: 4px;
   margin-bottom: 12px;
-  
+  /* Sem isso, um valor longo (e-mail, endereço) não quebra linha e empurra
+     a célula (e a página inteira) pra fora da tela no mobile. */
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+
   svg {
     margin-right: 10px;
     color: var(--primary-color);
+    flex-shrink: 0;
   }
 `;
 
@@ -133,6 +148,10 @@ const InfoGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+
+  & > * {
+    min-width: 0;
+  }
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
