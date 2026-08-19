@@ -11,6 +11,7 @@ import Card from '../../components/ui/Card';
 import Table, { Column } from '../../components/ui/Table';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { Emprestimo } from '../../types';
+import { getStatusColorVars, getStatusLabel } from '../../utils/statusEmprestimo';
 
 const PageHeader = styled.div`
   display: flex;
@@ -51,7 +52,7 @@ const Avatar = styled.div<{ $url?: string }>`
   width: 100%;
   max-width: 250px;
   height: 250px;
-  border-radius: var(--border-radius);
+  border-radius: 50%;
   background-color: ${({ $url }) => ($url ? 'transparent' : 'var(--primary-color)')};
   background-image: ${({ $url }) => ($url ? `url(${$url})` : 'none')};
   background-size: cover;
@@ -113,17 +114,19 @@ const StatusBadge = styled.span<{ $ativo: string }>`
 `;
 
 const EmprestimoStatus = styled.span<{ $status: string }>`
-  text-transform: capitalize;
-  color: ${({ $status }) => {
-    switch ($status) {
-      case 'atrasado':
-        return 'var(--danger-color)';
-      case 'devolvido':
-        return 'var(--success-color)';
-      default:
-        return 'var(--primary-color)';
-    }
-  }};
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+
+  ${({ $status }) => {
+    const { bg, text } = getStatusColorVars($status);
+    return `
+      background-color: ${bg};
+      color: ${text};
+    `;
+  }}
 `;
 
 const InfoGrid = styled.div`
@@ -183,7 +186,7 @@ const UsuarioDetailPage: React.FC = () => {
       header: 'Status',
       render: (item) => (
         <EmprestimoStatus $status={item.status || 'pendente'}>
-          {item.status || 'pendente'}
+          {getStatusLabel(item.status)}
         </EmprestimoStatus>
       ),
     },
