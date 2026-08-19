@@ -17,6 +17,10 @@ interface ContentProps {
 
 const Content = styled.main<ContentProps>`
   flex: 1;
+  /* Sem isso, um item flex não encolhe abaixo da largura mínima do seu
+   * conteúdo por padrão (min-width: auto) — qualquer coisa larga lá dentro
+   * (tabela, texto sem quebra) estoura a largura da página inteira. */
+  min-width: 0;
   margin-left: ${({ $isSidebarOpen }) => ($isSidebarOpen ? '250px' : '70px')};
   transition: margin-left 0.3s ease;
   padding: 20px;
