@@ -130,24 +130,31 @@ const StyledTable = styled.table<{ $compact?: boolean; $striped?: boolean; $hove
       margin-bottom: 0;
     }
 
+    /* Rótulo em cima, valor embaixo — em vez de lado a lado. Um valor curto
+       ("Leitor") fica igual de limpo assim, e um valor longo (e-mail, nome
+       comprido) que precisa quebrar linha não fica com a segunda linha
+       flutuando sozinha do lado direito, desconectada do rótulo. */
     td {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 3px;
       min-height: 44px;
       border-bottom: 1px solid var(--border-color);
-      text-align: right;
+      text-align: left;
       box-sizing: border-box;
       /* Sem isso, um e-mail ou texto longo sem espaços empurra a célula (e a
          tabela inteira) pra fora da tela — vale tanto pro texto direto na
          célula quanto pra qualquer filho abaixo. */
       overflow-wrap: break-word;
       word-break: break-word;
+      width: 100%;
     }
 
     td > * {
       min-width: 0;
+      max-width: 100%;
     }
 
     td:last-child {
@@ -156,15 +163,16 @@ const StyledTable = styled.table<{ $compact?: boolean; $striped?: boolean; $hove
 
     td::before {
       content: attr(data-label);
+      font-size: 0.75rem;
       font-weight: 600;
-      color: var(--text-color);
-      text-align: left;
-      flex-shrink: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--light-text-color);
     }
 
     /* Colunas sem header (ex.: capa/avatar) não mostram rótulo e centralizam o conteúdo */
     td[data-label=""] {
-      justify-content: center;
+      align-items: center;
     }
 
     td[data-label=""]::before {
@@ -177,7 +185,9 @@ const Cell = styled.td<{ $align?: 'left' | 'center' | 'right' }>`
   text-align: ${({ $align }) => $align || 'left'};
 
   @media (max-width: 640px) {
-    text-align: right;
+    /* No modo card o valor sempre fica alinhado à esquerda, embaixo do
+       rótulo — o alinhamento por coluna só faz sentido em tabela de verdade. */
+    text-align: left;
   }
 `;
 
