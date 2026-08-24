@@ -115,11 +115,41 @@ export const livroService = {
     categoria?: string;
     disponivel?: boolean;
   }): Promise<{ livros: Livro[]; total: number; totalPaginas: number; page: number }> => {
+    // Quando há termo de busca, usa /busca (título + autor + ISBN) em vez do
+    // filtro `titulo` puro do endpoint paginado — esse só bate no título, então
+    // buscar por autor (ex.: "Allan Kardec") nunca encontrava nada.
+    // /busca não pagina no servidor, então paginamos o resultado aqui.
+    if (params.titulo) {
+      const response = await api.get(`${ENDPOINT}/busca`, { params: { q: params.titulo } });
+      let livros: Livro[] = response.data.data || response.data || [];
+      if (!Array.isArray(livros)) livros = [];
+
+      if (params.categoria) {
+        livros = livros.filter((livro) => {
+          const categoriaId = typeof livro.categoria === 'string' ? livro.categoria : livro.categoria?._id;
+          return categoriaId === params.categoria;
+        });
+      }
+      if (params.disponivel !== undefined) {
+        livros = livros.filter((livro) => ((livro.disponiveis || 0) > 0) === params.disponivel);
+      }
+
+      const total = livros.length;
+      const totalPaginas = Math.max(1, Math.ceil(total / params.limit));
+      const start = (params.page - 1) * params.limit;
+
+      return {
+        livros: livros.slice(start, start + params.limit),
+        total,
+        totalPaginas,
+        page: params.page,
+      };
+    }
+
     const response = await api.get(ENDPOINT, {
       params: {
         page: params.page,
         limit: params.limit,
-        titulo: params.titulo || undefined,
         categoria: params.categoria || undefined,
         disponivel: params.disponivel,
       },
